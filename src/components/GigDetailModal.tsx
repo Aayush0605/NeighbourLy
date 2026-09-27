@@ -15,6 +15,7 @@ import {
 import { ServiceListing, LocationPoint, UserProfile } from '../types';
 import { calculateDistanceKm } from '../utils/location';
 import { NeighborLyLogo } from './NeighborLyLogo';
+import { TrustBadge } from './TrustBadge';
 
 interface GigDetailModalProps {
   service: ServiceListing;
@@ -184,21 +185,31 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
             <div className="lg:col-span-5">
               <div className="bg-white rounded-3xl p-6 sm:p-7 border border-zinc-200/90 shadow-soft-md space-y-6 sticky top-4">
                 
-                {/* Provider Card */}
-                <div className="flex items-center gap-3.5 pb-5 border-b border-zinc-100">
-                  <img
-                    src={service.provider?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
-                    alt={service.provider?.name || 'Neighbor'}
-                    referrerPolicy="no-referrer"
-                    className="w-12 h-12 rounded-full object-cover ring-2 ring-zinc-200"
-                  />
-                  <div>
-                    <h4 className="text-sm font-bold text-zinc-950">{service.provider?.name}</h4>
-                    <p className="text-xs text-zinc-500">@{service.provider?.userId}</p>
-                    <p className="text-[11px] text-zinc-500 mt-0.5 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-zinc-400" />
-                      <span>{service.provider?.location?.neighborhood || 'Current Neighborhood'}</span>
-                    </p>
+                {/* Provider Card with Trust Badges */}
+                <div className="space-y-3 pb-5 border-b border-zinc-100">
+                  <div className="flex items-center gap-3.5">
+                    <img
+                      src={service.provider?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                      alt={service.provider?.name || 'Neighbor'}
+                      referrerPolicy="no-referrer"
+                      className="w-12 h-12 rounded-full object-cover ring-2 ring-zinc-200"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-bold text-zinc-950">{service.provider?.name}</h4>
+                        <TrustBadge user={service.provider} variant="compact" />
+                      </div>
+                      <p className="text-xs text-zinc-500">@{service.provider?.userId}</p>
+                      <p className="text-[11px] text-zinc-500 mt-0.5 flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-zinc-400" />
+                        <span>{service.provider?.location?.neighborhood || 'Current Neighborhood'}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Trust Score & Verified Badges List */}
+                  <div className="pt-2">
+                    <TrustBadge user={service.provider} variant="badge-list" />
                   </div>
                 </div>
 

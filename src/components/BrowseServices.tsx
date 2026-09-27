@@ -20,6 +20,7 @@ import {
 import { ServiceListing, ServiceCategory, LocationPoint } from '../types';
 import { calculateDistanceKm } from '../utils/location';
 import { NeighborLyLogo } from './NeighborLyLogo';
+import { TrustBadge } from './TrustBadge';
 
 interface BrowseServicesProps {
   services: ServiceListing[];
@@ -546,7 +547,7 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                       )}
                     </div>
 
-                    {/* Provider info & pricing (Fiverr / Freelancer style) */}
+                    {/* Provider info, Trust Badge & pricing */}
                     <div className="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
                         <img
@@ -556,17 +557,21 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                           className="w-7 h-7 rounded-full object-cover ring-1 ring-zinc-200"
                         />
                         <div className="flex flex-col">
-                          <span className="font-bold text-zinc-900 text-xs truncate max-w-[95px]">
-                            {service.provider?.name?.split(' ')[0] || 'Neighbor'}
-                          </span>
-                          <span className="text-[10px] text-zinc-400 flex items-center gap-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-zinc-900 text-xs truncate max-w-[85px]">
+                              {service.provider?.name?.split(' ')[0] || 'Neighbor'}
+                            </span>
+                            <TrustBadge user={service.provider} variant="compact" />
+                          </div>
+                          <span className="text-[10px] text-zinc-400 flex items-center gap-0.5 mt-0.5">
                             <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                             <span className="font-semibold text-zinc-700">{service.rating.toFixed(1)}</span>
+                            <span>({service.reviewCount || 0})</span>
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <span className="text-[10px] text-zinc-400 block font-medium">Starting at</span>
                         <span className="text-base font-extrabold font-heading text-zinc-950 tabular-nums">
                           ₹{service.price}

@@ -84,8 +84,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   // Separate Admin Auth State
   const [adminSession, setAdminSession] = useState<AdminSession | null>(() => getAdminSession());
-  const [adminIdentifier, setAdminIdentifier] = useState('admin@neighborly.in');
-  const [adminPassword, setAdminPassword] = useState('admin');
+  const [adminIdentifier, setAdminIdentifier] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);

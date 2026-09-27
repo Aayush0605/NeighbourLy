@@ -19,6 +19,23 @@ export type ServiceCategory =
   | 'Craft & Handmade'
   | 'Others';
 
+export type TrustBadgeType = 
+  | 'student_verified'     // 🎓 Campus Student ID Verified
+  | 'id_verified'          // 🛡️ Govt / Resident ID Verified
+  | 'phone_verified'       // 📱 Phone Verified (OTP)
+  | 'email_verified'       // ✉️ Verified University or Personal Email
+  | 'escrow_champion'      // 🔒 100% Escrow Completion Record (Zero Disputes)
+  | 'top_rated'            // ⭐ 4.8+ Star Rating with 3+ Reviews
+  | 'fast_responder'       // ⚡ Fast Response Time (< 15 mins)
+  | 'community_pillar';    // 🏛️ Verified Longstanding Neighborhood Pillar
+
+export type VerificationTier = 
+  | 'unverified'
+  | 'basic_member'
+  | 'verified_neighbor'
+  | 'verified_student'
+  | 'neighborhood_pro';
+
 export interface UserProfile {
   id: string;
   userId: string;
@@ -28,6 +45,24 @@ export interface UserProfile {
   location: LocationPoint;
   authProvider: 'google' | 'password';
   verified: boolean;
+  
+  // Neighborhood Trust Score & Verification Badges
+  trustScore?: number;          // 0 to 100 dynamic calculated score
+  verificationTier?: VerificationTier;
+  trustBadges?: TrustBadgeType[];
+  idVerified?: boolean;
+  studentVerified?: boolean;
+  phoneVerified?: boolean;
+  emailVerified?: boolean;
+  backgroundChecked?: boolean;
+  studentUniversity?: string;
+  studentMajor?: string;
+  studentGradYear?: string;
+  phoneNumber?: string;
+  responseTimeMinutes?: number;
+  disputeFreeRate?: number;     // e.g. 100%
+  repeatHireCount?: number;
+
   tasksCompleted: number;
   rating: number;
   reviewCount: number;
