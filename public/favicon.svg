@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Dark Container Gradient (Inspired by Image 1, Panel 4 Icon) -->
+    <linearGradient id="favBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#1E1E2E" />
+      <stop offset="50%" stopColor="#0F172A" />
+      <stop offset="100%" stopColor="#09090B" />
+    </linearGradient>
+
+    <!-- Signature Fluid N Ribbon Gradient -->
+    <linearGradient id="favRibbon" x1="15%" y1="85%" x2="85%" y2="15%">
+      <stop offset="0%" stopColor="#06B6D4" />
+      <stop offset="35%" stopColor="#3B82F6" />
+      <stop offset="70%" stopColor="#8B5CF6" />
+      <stop offset="100%" stopColor="#D946EF" />
+    </linearGradient>
+
+    <!-- Left Student/Neighbor Head Gradient -->
+    <linearGradient id="favHeadL" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#22D3EE" />
+      <stop offset="100%" stopColor="#3B82F6" />
+    </linearGradient>
+
+    <!-- Right Student/Neighbor Head Gradient -->
+    <linearGradient id="favHeadR" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#A855F7" />
+      <stop offset="100%" stopColor="#EC4899" />
+    </linearGradient>
+
+    <!-- Ambient Shadow Glow -->
+    <filter id="favGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" floodColor="#8B5CF6" floodOpacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Squircle App Icon Container -->
+  <rect width="512" height="512" rx="128" fill="url(#favBg)" />
+  <rect width="504" height="504" x="4" y="4" rx="124" fill="none" stroke="rgba(255, 255, 255, 0.12)" stroke-width="4" />
+
+  <!-- Logo Mark Group with Filter Glow -->
+  <g filter="url(#favGlow)">
+    <!-- Two Connecting Student/Neighbor Heads -->
+    <circle cx="160" cy="115" r="44" fill="url(#favHeadL)" />
+    <circle cx="352" cy="98" r="46" fill="url(#favHeadR)" />
+
+    <!-- Connecting 'N' Ribbon Body -->
+    <path
+      d="M 108 390 C 108 276, 118 220, 160 210 C 210 200, 260 282, 308 385 C 328 322, 348 250, 368 190"
+      fill="none"
+      stroke="url(#favRibbon)"
+      stroke-width="72"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+</svg>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   ShieldCheck, 
   Lock, 
@@ -26,8 +26,28 @@ import {
   ShieldAlert,
   ArrowRight,
   EyeOff,
-  UserCheck
+  UserCheck,
+  TrendingUp,
+  BarChart3,
+  PieChart as PieChartIcon,
+  Calendar,
+  Layers
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from 'recharts';
 import { ServiceListing, TaskRequest, Order, LocationPoint, UserProfile } from '../types';
 import { 
   AdminSession, 
@@ -175,6 +195,119 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       showBanner(`Dispute resolved: 50/50 escrow settlement approved between parties`);
     }
   };
+
+  // Recharts Monthly Trends & Escrow Health Calculations
+  const [trendTimeframe, setTrendTimeframe] = useState<'6M' | '3M'>('6M');
+
+  const monthlyTrendsData = useMemo(() => {
+    const buckets: Record<string, { month: string; orderVolume: number; escrowThroughput: number; completedGmv: number; disputedCount: number }> = {
+      'Apr': { month: 'Apr', orderVolume: 0, escrowThroughput: 0, completedGmv: 0, disputedCount: 0 },
+      'May': { month: 'May', orderVolume: 0, escrowThroughput: 0, completedGmv: 0, disputedCount: 0 },
+      'Jun': { month: 'Jun', orderVolume: 0, escrowThroughput: 0, completedGmv: 0, disputedCount: 0 },
+      'Jul': { month: 'Jul', orderVolume: 0, escrowThroughput: 0, completedGmv: 0, disputedCount: 0 },
+      'Aug': { month: 'Aug', orderVolume: 0, escrowThroughput: 0, completedGmv: 0, disputedCount: 0 },
+      'Sep': { month: 'Sep', orderVolume: 0, escrowThroughput: 0, completedGmv: 0, disputedCount: 0 },
+    };
+
+    orders.forEach((o) => {
+      let m = 'Sep';
+      if (o.createdAt) {
+        try {
+          const d = new Date(o.createdAt);
+          const name = d.toLocaleString('en-US', { month: 'short' });
+          if (buckets[name]) m = name;
+        } catch {}
+      }
+      buckets[m].orderVolume += 1;
+      buckets[m].escrowThroughput += o.amount;
+      if (o.status === 'completed') {
+        buckets[m].completedGmv += o.amount;
+      }
+      if (o.status === 'disputed') {
+        buckets[m].disputedCount += 1;
+      }
+    });
+
+    const fullList = Object.values(buckets);
+    return trendTimeframe === '3M' ? fullList.slice(-3) : fullList;
+  }, [orders, trendTimeframe]);
+
+  // Escrow Vault Distribution for Donut Chart
+  const escrowHealthData = useMemo(() => {
+    const completed = orders.filter((o) => o.status === 'completed');
+    const inEscrow = orders.filter((o) => o.status === 'in_escrow' || o.status === 'delivered');
+    const disputed = orders.filter((o) => o.status === 'disputed');
+    const cancelled = orders.filter((o) => o.status === 'cancelled');
+
+    return [
+      {
+        name: 'Released (Completed)',
+        value: completed.reduce((sum, o) => sum + o.amount, 0),
+        count: completed.length,
+        color: '#10b981', // emerald-500
+      },
+      {
+        name: 'Held in Escrow Vault',
+        value: inEscrow.reduce((sum, o) => sum + o.amount, 0),
+        count: inEscrow.length,
+        color: '#6366f1', // indigo-500
+      },
+      {
+        name: 'Under Dispute Review',
+        value: disputed.reduce((sum, o) => sum + o.amount, 0),
+        count: disputed.length,
+        color: '#f43f5e', // rose-500
+      },
+      {
+        name: 'Refunded / Cancelled',
+        value: cancelled.reduce((sum, o) => sum + o.amount, 0),
+        count: cancelled.length,
+        color: '#f59e0b', // amber-500
+      },
+    ];
+  }, [orders]);
+
+  // Category Distribution
+  const categoryActivityData = useMemo(() => {
+    const map: Record<string, { category: string; orders: number; listings: number }> = {};
+    services.forEach((s) => {
+      const cat = s.category || 'Other';
+      if (!map[cat]) map[cat] = { category: cat, orders: 0, listings: 0 };
+      map[cat].listings += 1;
+    });
+    orders.forEach((o) => {
+      const cat = o.category || 'Other';
+      if (!map[cat]) map[cat] = { category: cat, orders: 0, listings: 0 };
+      map[cat].orders += 1;
+    });
+
+    const arr = Object.values(map);
+    return arr.length > 0
+      ? arr.sort((a, b) => (b.orders + b.listings) - (a.orders + a.listings)).slice(0, 5)
+      : [
+          { category: 'Home & Repairs', orders: 0, listings: 0 },
+          { category: 'Tech & Digital', orders: 0, listings: 0 },
+          { category: 'Pet Care', orders: 0, listings: 0 },
+          { category: 'Lessons', orders: 0, listings: 0 },
+        ];
+  }, [services, orders]);
+
+  // Overall Escrow Value
+  const totalEscrowProcessed = useMemo(() => {
+    return orders.reduce((sum, o) => sum + o.amount, 0);
+  }, [orders]);
+
+  // Moderator Health Metrics
+  const healthMetrics = useMemo(() => {
+    const total = orders.length;
+    const completed = orders.filter((o) => o.status === 'completed').length;
+    const disputed = orders.filter((o) => o.status === 'disputed').length;
+    const settlementRate = total > 0 ? ((completed / (completed + disputed || 1)) * 100).toFixed(1) : '100.0';
+    const disputeRatio = total > 0 ? ((disputed / total) * 100).toFixed(1) : '0.0';
+    const avgOrderValue = total > 0 ? Math.round(orders.reduce((sum, o) => sum + o.amount, 0) / total) : 0;
+
+    return { settlementRate, disputeRatio, avgOrderValue };
+  }, [orders]);
 
   // If Admin is NOT authenticated, display the dedicated separate Admin Login Gate
   if (!adminSession) {
@@ -465,82 +598,415 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </button>
       </div>
 
-      {/* Tab 1: Overview */}
+      {/* Tab 1: Overview & Recharts Analytics */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-7 border border-zinc-200/80 shadow-soft space-y-5">
-            <h3 className="text-base font-bold text-zinc-950 flex items-center justify-between">
-              <span>Live Escrow & Order Activity</span>
-              <span className="text-xs text-zinc-400 font-normal">Real-time status</span>
-            </h3>
-
-            {orders.length === 0 ? (
-              <div className="py-12 text-center space-y-2 border border-dashed border-zinc-200 rounded-2xl p-6">
-                <Lock className="w-8 h-8 text-zinc-300 mx-auto" />
-                <p className="text-sm font-bold text-zinc-800">No Orders in Escrow Yet</p>
-                <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-                  When neighbors book services, their funds will appear here under Escrow-Lite protection until marked completed.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-zinc-100">
-                {orders.slice(0, 5).map((order) => (
-                  <div key={order.id} className="py-3 flex items-center justify-between gap-4 text-xs">
-                    <div>
-                      <p className="font-bold text-zinc-900">{order.serviceTitle}</p>
-                      <p className="text-zinc-500 text-[11px] mt-0.5">
-                        Buyer: {order.buyerName} · Seller: {order.sellerName}
-                      </p>
+        <div className="space-y-6">
+          
+          {/* Top Analytics Row: Recharts Monthly Trends & Escrow Health */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* Primary Chart: Monthly Order Volume & Escrow Throughput (8 cols) */}
+            <div className="lg:col-span-8 bg-white rounded-3xl p-6 sm:p-7 border border-zinc-200/80 shadow-soft space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-zinc-100">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4" />
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-zinc-900">₹{order.amount}</p>
-                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                        order.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
-                        order.status === 'disputed' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'
-                      }`}>
-                        {order.status.replace('_', ' ')}
-                      </span>
-                    </div>
+                    <h3 className="text-base font-bold text-zinc-950">
+                      Monthly Order Volume & Escrow Trends
+                    </h3>
                   </div>
-                ))}
+                  <p className="text-xs text-zinc-500 mt-1">
+                    Tracking completed volume, escrow throughput, and platform transaction velocity.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 p-1 bg-zinc-100 rounded-xl border border-zinc-200/70 text-xs">
+                  <button
+                    onClick={() => setTrendTimeframe('6M')}
+                    className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                      trendTimeframe === '6M' ? 'bg-white text-zinc-950 shadow-2xs' : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                  >
+                    6 Months
+                  </button>
+                  <button
+                    onClick={() => setTrendTimeframe('3M')}
+                    className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                      trendTimeframe === '3M' ? 'bg-white text-zinc-950 shadow-2xs' : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                  >
+                    3 Months
+                  </button>
+                </div>
               </div>
-            )}
+
+              {/* Chart Canvas */}
+              <div className="h-72 w-full pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={monthlyTrendsData}
+                    margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="escrowGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
+                      </linearGradient>
+                      <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
+                    <XAxis
+                      dataKey="month"
+                      tickLine={false}
+                      axisLine={{ stroke: '#e4e4e7' }}
+                      tick={{ fill: '#71717a', fontSize: 11, fontWeight: 500 }}
+                    />
+                    <YAxis
+                      yAxisId="escrowAxis"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fill: '#71717a', fontSize: 10 }}
+                      tickFormatter={(val) => `₹${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
+                    />
+                    <YAxis
+                      yAxisId="volumeAxis"
+                      orientation="right"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fill: '#71717a', fontSize: 10 }}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-zinc-950 text-white p-3.5 rounded-2xl shadow-xl border border-zinc-800 text-xs space-y-1.5 backdrop-blur-md">
+                              <p className="font-bold text-zinc-300 flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                                <span>{label} 2026 Platform Telemetry</span>
+                              </p>
+                              <div className="space-y-1 pt-1 border-t border-zinc-800">
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="flex items-center gap-1.5 text-zinc-400">
+                                    <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                                    <span>Escrow Value:</span>
+                                  </span>
+                                  <span className="font-mono font-bold text-white">
+                                    ₹{Number(payload[0]?.value || 0).toLocaleString()}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                  <span className="flex items-center gap-1.5 text-zinc-400">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                    <span>Orders Volume:</span>
+                                  </span>
+                                  <span className="font-mono font-bold text-emerald-400">
+                                    {payload[1]?.value || 0} orders
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Legend
+                      verticalAlign="top"
+                      align="right"
+                      iconType="circle"
+                      wrapperStyle={{ paddingBottom: '10px', fontSize: '11px' }}
+                    />
+                    <Area
+                      yAxisId="escrowAxis"
+                      type="monotone"
+                      dataKey="escrowThroughput"
+                      name="Escrow Value (₹)"
+                      stroke="#6366f1"
+                      strokeWidth={2.5}
+                      fillOpacity={1}
+                      fill="url(#escrowGradient)"
+                      activeDot={{ r: 6, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
+                    />
+                    <Area
+                      yAxisId="volumeAxis"
+                      type="monotone"
+                      dataKey="orderVolume"
+                      name="Orders Placed"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#volumeGradient)"
+                      activeDot={{ r: 5, fill: '#10b981' }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-zinc-400 pt-2 border-t border-zinc-100">
+                <span className="flex items-center gap-1 text-emerald-600 font-semibold">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>All escrow transactions backed by Escrow-Lite</span>
+                </span>
+                <span>Values dynamically reflect genuine platform orders</span>
+              </div>
+            </div>
+
+            {/* Secondary Chart: Escrow Health Donut (4 cols) */}
+            <div className="lg:col-span-4 bg-white rounded-3xl p-6 sm:p-7 border border-zinc-200/80 shadow-soft flex flex-col justify-between space-y-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <PieChartIcon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-zinc-950">Escrow Vault Health</h3>
+                    <p className="text-[11px] text-zinc-500">Fund security & arbitration state</p>
+                  </div>
+                </div>
+
+                {/* Donut Chart */}
+                <div className="relative h-44 w-full my-2 flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0];
+                            return (
+                              <div className="bg-zinc-950 text-white p-2.5 rounded-xl shadow-xl border border-zinc-800 text-xs space-y-0.5">
+                                <p className="font-bold" style={{ color: data.payload.color }}>
+                                  {data.name}
+                                </p>
+                                <p className="text-zinc-300 font-mono">
+                                  ₹{Number(data.value).toLocaleString()}
+                                </p>
+                                <p className="text-[10px] text-zinc-400">
+                                  {data.payload.count} orders
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Pie
+                        data={escrowHealthData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={72}
+                        paddingAngle={3}
+                      >
+                        {escrowHealthData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+
+                  {/* Centered Donut Label */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">
+                      Processed
+                    </span>
+                    <span className="text-sm font-heading font-extrabold text-zinc-950 tabular-nums">
+                      ₹{totalEscrowProcessed.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Breakdown Legend */}
+                <div className="space-y-1.5 pt-2 border-t border-zinc-100 text-xs">
+                  {escrowHealthData.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                        <span className="text-zinc-600 truncate max-w-[130px]">{item.name}</span>
+                      </div>
+                      <div className="font-mono font-bold text-zinc-900">
+                        ₹{item.value.toLocaleString()}{' '}
+                        <span className="text-zinc-400 font-normal">({item.count})</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/80 text-[11px] text-zinc-500 space-y-1">
+                <span className="font-bold text-zinc-800 block">Moderator SLA Assurance</span>
+                <span>Active disputes arbitrated within 2 hours under escrow safety rules.</span>
+              </div>
+            </div>
+
           </div>
 
-          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-zinc-200/80 shadow-soft space-y-4">
-            <h3 className="text-base font-bold text-zinc-950">Active Neighborhood Node</h3>
-            <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200/80 space-y-2 text-xs">
-              <div className="flex items-center gap-2 font-bold text-zinc-900">
-                <MapPin className="w-4 h-4 text-blue-600" />
-                <span>{currentLocation.neighborhood}</span>
-              </div>
-              <p className="text-zinc-500">
-                Coordinates: {currentLocation.lat.toFixed(4)}, {currentLocation.lng.toFixed(4)}
+          {/* Moderator Platform Health Telemetry KPI Bar */}
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-white rounded-2xl p-4 border border-zinc-200/80 shadow-soft-xs space-y-1">
+              <span className="text-[11px] font-semibold text-zinc-500">Escrow Settlement Ratio</span>
+              <p className="text-xl font-heading font-extrabold text-emerald-600">
+                {healthMetrics.settlementRate}%
               </p>
-              <p className="text-zinc-500">
-                Enforced Search Radius: <strong>{maxRadiusSetting} km</strong>
+              <span className="text-[10px] text-zinc-400">Successful dispute-free completions</span>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 border border-zinc-200/80 shadow-soft-xs space-y-1">
+              <span className="text-[11px] font-semibold text-zinc-500">Dispute Frequency</span>
+              <p className="text-xl font-heading font-extrabold text-zinc-900">
+                {healthMetrics.disputeRatio}%
+              </p>
+              <span className="text-[10px] text-zinc-400">{disputedOrders.length} active tickets pending review</span>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 border border-zinc-200/80 shadow-soft-xs space-y-1">
+              <span className="text-[11px] font-semibold text-zinc-500">Average Order Value (AOV)</span>
+              <p className="text-xl font-heading font-extrabold text-indigo-600">
+                ₹{healthMetrics.avgOrderValue.toLocaleString()}
+              </p>
+              <span className="text-[10px] text-zinc-400">Mean neighborhood transaction ticket</span>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 border border-zinc-200/80 shadow-soft-xs space-y-1">
+              <span className="text-[11px] font-semibold text-zinc-500">Platform Take Rate</span>
+              <p className="text-xl font-heading font-extrabold text-zinc-950">
+                0%
+              </p>
+              <span className="text-[10px] text-emerald-600 font-semibold">100% peer payout guarantee</span>
+            </div>
+          </div>
+
+          {/* Lower Analytics Row: Category Demand (Recharts BarChart) + Live Order Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* Category Demand BarChart (6 cols) */}
+            <div className="lg:col-span-6 bg-white rounded-3xl p-6 sm:p-7 border border-zinc-200/80 shadow-soft space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base font-bold text-zinc-950">Demand by Skill Category</h3>
+                </div>
+                <span className="text-xs text-zinc-400 font-medium">Orders vs Listings</span>
+              </div>
+
+              <div className="h-56 w-full pt-1">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={categoryActivityData}
+                    layout="vertical"
+                    margin={{ top: 5, right: 15, left: 15, bottom: 5 }}
+                  >
+                    <CartesianGrid horizontal={false} stroke="#f4f4f5" />
+                    <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: '#71717a', fontSize: 10 }} />
+                    <YAxis
+                      dataKey="category"
+                      type="category"
+                      tickLine={false}
+                      axisLine={false}
+                      width={100}
+                      tick={{ fill: '#18181b', fontSize: 11, fontWeight: 600 }}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-zinc-950 text-white p-2.5 rounded-xl shadow-xl border border-zinc-800 text-xs space-y-1">
+                              <p className="font-bold text-white">{label}</p>
+                              {payload.map((entry, idx) => (
+                                <p key={idx} className="flex items-center justify-between gap-3 text-zinc-300">
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.fill }} />
+                                    <span>{entry.name}:</span>
+                                  </span>
+                                  <span className="font-bold text-white font-mono">{entry.value}</span>
+                                </p>
+                              ))}
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} />
+                    <Bar dataKey="orders" name="Orders" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={12} />
+                    <Bar dataKey="listings" name="Listings" fill="#cbd5e1" radius={[0, 6, 6, 0]} barSize={12} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <p className="text-[11px] text-zinc-400 pt-1 border-t border-zinc-100">
+                Helps moderators identify high-demand neighborhood skills needing more local providers.
               </p>
             </div>
 
-            <div className="pt-2 space-y-2 text-xs text-zinc-600">
-              <div className="flex justify-between py-1.5 border-b border-zinc-100">
-                <span>Community Fee</span>
-                <span className="font-bold text-emerald-600">0% (Peer-to-Peer)</span>
+            {/* Live Escrow & Order Stream (6 cols) */}
+            <div className="lg:col-span-6 bg-white rounded-3xl p-6 sm:p-7 border border-zinc-200/80 shadow-soft space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-100 text-zinc-700 flex items-center justify-center">
+                    <Activity className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base font-bold text-zinc-950">Live Transaction Ledger</h3>
+                </div>
+                <button
+                  onClick={() => setActiveTab('orders')}
+                  className="text-xs text-blue-600 font-semibold hover:underline cursor-pointer"
+                >
+                  View All ({orders.length}) →
+                </button>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-zinc-100">
-                <span>Escrow Hold Rule</span>
-                <span className="font-bold text-zinc-900">Released on buyer approval</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-zinc-100">
-                <span>Total Gigs Listed</span>
-                <span className="font-bold text-zinc-900">{services.length}</span>
-              </div>
-              <div className="flex justify-between py-1.5">
-                <span>Open Task Broadcasts</span>
-                <span className="font-bold text-zinc-900">{requests.length}</span>
+
+              {orders.length === 0 ? (
+                <div className="py-12 text-center space-y-2 border border-dashed border-zinc-200 rounded-2xl p-6">
+                  <Lock className="w-8 h-8 text-zinc-300 mx-auto" />
+                  <p className="text-sm font-bold text-zinc-800">No Orders in Escrow Yet</p>
+                  <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+                    When neighbors book services, their funds will appear here under Escrow-Lite protection until marked completed.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-zinc-100 max-h-64 overflow-y-auto">
+                  {orders.slice(0, 5).map((order) => (
+                    <div key={order.id} className="py-3 flex items-center justify-between gap-4 text-xs">
+                      <div>
+                        <p className="font-bold text-zinc-900">{order.serviceTitle}</p>
+                        <p className="text-zinc-500 text-[11px] mt-0.5">
+                          Buyer: {order.buyerName} · Seller: {order.sellerName}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-zinc-900">₹{order.amount}</p>
+                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                          order.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
+                          order.status === 'disputed' ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700'
+                        }`}>
+                          {order.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500">
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Node: {currentLocation.neighborhood}</span>
+                </span>
+                <span>Active Radius: {maxRadiusSetting} km</span>
               </div>
             </div>
+
           </div>
+
         </div>
       )}
 

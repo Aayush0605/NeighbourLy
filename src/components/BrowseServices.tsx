@@ -348,8 +348,8 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
           </button>
         </div>
 
-        {/* Category Filter Tabs (Horizontal scroll with larger pill radius) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+        {/* Category Filter Tabs (Horizontal scroll with edge-to-edge mobile overflow) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
           {categoryPills.map((cat) => (
             <button
               key={cat.value}
@@ -489,9 +489,10 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                   onClick={() => onSelectService(service)}
                   className="group bg-white rounded-2xl sm:rounded-3xl border border-zinc-200/80 hover:border-zinc-300 shadow-soft hover:shadow-soft-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col cursor-pointer"
                 >
-                  {/* Card Cover (Clean minimal card header with subtle gradient) */}
-                  <div className="h-36 bg-gradient-to-br from-zinc-100 via-zinc-50 to-zinc-100 p-4 flex flex-col justify-between border-b border-zinc-100 relative">
-                    <div className="flex items-center justify-between">
+                  {/* Card Cover (Clean minimal card header with subtle gradient & brand watermark) */}
+                  <div className="h-36 bg-gradient-to-br from-zinc-100 via-zinc-50 to-zinc-100 p-4 flex flex-col justify-between border-b border-zinc-100 relative overflow-hidden">
+                    <NeighborLyLogo size="xl" variant="watermark" className="absolute -right-2 -bottom-2" />
+                    <div className="flex items-center justify-between relative z-10">
                       <span className="text-[11px] font-bold text-zinc-700 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-lg shadow-2xs border border-zinc-200/50">
                         {service.category}
                       </span>
@@ -512,7 +513,7 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                       </button>
                     </div>
 
-                    <div>
+                    <div className="relative z-10">
                       <p className="text-sm font-bold text-zinc-950 group-hover:text-blue-600 transition-colors line-clamp-1">
                         {service.title}
                       </p>

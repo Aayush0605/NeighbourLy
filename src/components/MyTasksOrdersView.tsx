@@ -12,6 +12,7 @@ import {
   Trash2 
 } from 'lucide-react';
 import { Order, ServiceListing, TaskRequest, UserProfile } from '../types';
+import { NeighborLyLogo } from './NeighborLyLogo';
 
 interface MyTasksOrdersViewProps {
   currentUser: UserProfile;
@@ -95,17 +96,17 @@ export const MyTasksOrdersView: React.FC<MyTasksOrdersViewProps> = ({
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
           <button
             onClick={onOpenPostService}
-            className="px-4 py-2.5 text-xs font-semibold text-zinc-800 bg-white hover:bg-zinc-50 rounded-2xl border border-zinc-200/90 shadow-2xs hover:shadow-soft-xs transition-all flex items-center gap-2 cursor-pointer"
+            className="flex-1 sm:flex-initial justify-center px-4 py-2.5 text-xs font-semibold text-zinc-800 bg-white hover:bg-zinc-50 rounded-2xl border border-zinc-200/90 shadow-2xs hover:shadow-soft-xs transition-all flex items-center gap-2 cursor-pointer min-h-[42px]"
           >
             <Briefcase className="w-3.5 h-3.5 text-zinc-500" />
             <span>Offer a Skill</span>
           </button>
           <button
             onClick={onOpenPostRequest}
-            className="px-4 py-2.5 text-xs font-semibold text-white bg-zinc-950 hover:bg-zinc-800 rounded-2xl shadow-soft hover:shadow-soft-md transition-all flex items-center gap-2 cursor-pointer"
+            className="flex-1 sm:flex-initial justify-center px-4 py-2.5 text-xs font-semibold text-white bg-zinc-950 hover:bg-zinc-800 rounded-2xl shadow-soft hover:shadow-soft-md transition-all flex items-center gap-2 cursor-pointer min-h-[42px]"
           >
             <Plus className="w-4 h-4" />
             <span>Post a Task</span>
@@ -113,8 +114,8 @@ export const MyTasksOrdersView: React.FC<MyTasksOrdersViewProps> = ({
         </div>
       </div>
 
-      {/* Segmented Navigation Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-zinc-200/70 no-scrollbar">
+      {/* Segmented Navigation Tabs (Edge-to-edge scroll on mobile) */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-zinc-200/70 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
         {[
           { id: 'orders', label: 'Active Tasks & Orders', count: myOrders.length },
           { id: 'my_services', label: 'My Offered Skills', count: myServices.length },
@@ -146,12 +147,16 @@ export const MyTasksOrdersView: React.FC<MyTasksOrdersViewProps> = ({
       {activeTab === 'orders' && (
         <div className="space-y-4">
           {myOrders.length === 0 ? (
-            <div className="bg-white rounded-3xl p-12 text-center border border-zinc-200/80 shadow-soft space-y-3">
-              <Clock className="w-8 h-8 text-zinc-400 mx-auto" />
-              <h3 className="text-base font-bold text-zinc-950">No active tasks or orders yet</h3>
-              <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-                Explore services in your neighborhood or post a task to connect with skilled neighbors.
-              </p>
+            <div className="bg-white rounded-3xl p-12 text-center border border-zinc-200/80 shadow-soft space-y-4">
+              <div className="flex items-center justify-center">
+                <NeighborLyLogo size="lg" variant="icon" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-zinc-950">No active tasks or orders yet</h3>
+                <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+                  Explore services in your neighborhood or post a task to connect with skilled neighbors.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

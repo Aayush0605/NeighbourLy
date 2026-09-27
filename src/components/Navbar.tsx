@@ -52,13 +52,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200/80 shadow-soft-xs">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
+      <div className="max-w-7xl mx-auto px-2.5 xs:px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-1.5 xs:gap-2 sm:gap-4">
         
         {/* Left Section: Brand Logo & Hyperlocal Chip */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 shrink-0">
           <button 
             onClick={() => onNavigate('home')} 
             className="flex items-center group text-left cursor-pointer focus-visible:outline-none shrink-0"
+            aria-label="NeighborLy Home"
           >
             <NeighborLyLogo size="md" />
           </button>
@@ -66,11 +67,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Hyperlocal Location Chip - Always strictly single line, no wrapping */}
           <button
             onClick={onOpenLocationPicker}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-zinc-50 hover:bg-zinc-100 rounded-xl text-xs font-semibold text-zinc-700 transition-all border border-zinc-200/90 shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
+            className="flex items-center gap-1 xs:gap-1.5 px-2 xs:px-2.5 sm:px-3 py-1.5 bg-zinc-50 hover:bg-zinc-100 rounded-xl text-xs font-semibold text-zinc-700 transition-all border border-zinc-200/90 shadow-2xs cursor-pointer shrink-0 whitespace-nowrap min-h-[36px]"
             title="Change Location or Set Radius"
           >
             <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <span className="max-w-[90px] xs:max-w-[120px] sm:max-w-[150px] md:max-w-[170px] truncate">
+            <span className="max-w-[70px] xs:max-w-[110px] sm:max-w-[150px] md:max-w-[170px] truncate">
               {currentLocation.neighborhood || currentLocation.city}
             </span>
             <span className="text-[10px] text-zinc-600 font-bold bg-zinc-200/80 px-1.5 py-0.2 rounded-md hidden xs:inline shrink-0">
@@ -129,7 +130,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* AI Assistant - Requested Feature */}
+          {/* AI Assistant - Hyperlocal AI Chatbot */}
           <button
             onClick={() => onNavigate('ai')}
             className={`px-3 py-1.5 rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -143,19 +144,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="text-[10px] bg-indigo-100 text-indigo-700 font-extrabold px-1.5 py-0.2 rounded-md">
               AI
             </span>
-          </button>
-
-          {/* Admin Dashboard - Requested Feature */}
-          <button
-            onClick={() => onNavigate('admin')}
-            className={`px-3 py-1.5 rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 cursor-pointer ${
-              activeView === 'admin'
-                ? 'bg-zinc-900 text-white font-bold shadow-soft-xs'
-                : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-            <span>Admin</span>
           </button>
         </nav>
 
@@ -171,13 +159,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Offer Skill</span>
           </button>
 
-          {/* Post a Task Button (High Contrast, single-line, no text wrapping) */}
+          {/* Post a Task Button (High Contrast, single-line, fluid text on small screens) */}
           <button
             onClick={onOpenPostRequest}
-            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-zinc-950 hover:bg-zinc-800 rounded-xl transition-all shadow-soft hover:shadow-soft-md cursor-pointer whitespace-nowrap shrink-0"
+            className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 xs:px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-zinc-950 hover:bg-zinc-800 rounded-xl transition-all shadow-soft hover:shadow-soft-md cursor-pointer whitespace-nowrap shrink-0 min-h-[36px]"
           >
             <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span>Post Task</span>
+            <span className="hidden xs:inline">Post Task</span>
+            <span className="xs:hidden">Post</span>
           </button>
 
           {/* User Profile / Auth State */}

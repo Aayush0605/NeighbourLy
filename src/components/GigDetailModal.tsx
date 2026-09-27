@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { ServiceListing, LocationPoint, UserProfile } from '../types';
 import { calculateDistanceKm } from '../utils/location';
+import { NeighborLyLogo } from './NeighborLyLogo';
 
 interface GigDetailModalProps {
   service: ServiceListing;
@@ -64,13 +65,17 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
         
         {/* Header */}
         <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/60 shrink-0">
-          <button
-            onClick={onClose}
-            className="flex items-center gap-2 text-xs font-bold text-zinc-600 hover:text-zinc-950 transition-colors cursor-pointer py-1"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to services</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onClose}
+              className="flex items-center gap-2 text-xs font-bold text-zinc-600 hover:text-zinc-950 transition-colors cursor-pointer py-1"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to services</span>
+            </button>
+            <span className="hidden sm:inline text-zinc-300">|</span>
+            <NeighborLyLogo size="xs" variant="badge" className="hidden sm:inline-flex" />
+          </div>
 
           <div className="flex items-center gap-2">
             <button

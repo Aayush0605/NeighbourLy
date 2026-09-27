@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" width="320" height="72" fill="none">
+  <defs>
+    <linearGradient id="logoRibbonLight" x1="15%" y1="85%" x2="85%" y2="15%">
+      <stop offset="0%" stopColor="#06B6D4" />
+      <stop offset="35%" stopColor="#3B82F6" />
+      <stop offset="70%" stopColor="#8B5CF6" />
+      <stop offset="100%" stopColor="#D946EF" />
+    </linearGradient>
+    <linearGradient id="logoHeadLLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#22D3EE" />
+      <stop offset="3B82F6" />
+    </linearGradient>
+    <linearGradient id="logoHeadRLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#A855F7" />
+      <stop offset="100%" stopColor="#EC4899" />
+    </linearGradient>
+  </defs>
+
+  <!-- Logo Mark on Left (scaled to fit ~56x56) -->
+  <g transform="translate(6, 6) scale(0.60)">
+    <circle cx="31" cy="22" r="8.5" fill="url(#logoHeadLLight)" />
+    <circle cx="69" cy="19" r="9" fill="url(#logoHeadRLight)" />
+    <path
+      d="M 21 76 C 21 54, 23 43, 31 41 C 41 39, 51 55, 60 75 C 64 63, 68 49, 72 37"
+      stroke="url(#logoRibbonLight)"
+      stroke-width="14"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+
+  <!-- Wordmark Text -->
+  <text x="76" y="42" font-family="system-ui, -apple-system, 'Outfit', 'Plus Jakarta Sans', sans-serif" font-size="30" font-weight="800" letter-spacing="-0.03em" fill="#09090B">
+    Neighbor<tspan fill="#A855F7">Ly</tspan>
+  </text>
+
+  <!-- Tagline Text -->
+  <text x="76" y="58" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="700" letter-spacing="0.12em" fill="#64748B">
+    STUDENTS HELPING STUDENTS
+  </text>
+</svg>

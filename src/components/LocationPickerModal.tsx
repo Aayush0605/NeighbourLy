@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { LocationPoint } from '../types';
 import { POPULAR_LOCATIONS, detectBrowserLocation } from '../utils/location';
+import { NeighborLyLogo } from './NeighborLyLogo';
 
 interface LocationPickerModalProps {
   currentLocation: LocationPoint;
@@ -82,13 +83,16 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
       >
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/60">
-          <div>
-            <h2 className="text-base sm:text-lg font-heading font-extrabold text-zinc-950">
-              Set Your Neighborhood
-            </h2>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              Neighborly uses your location to discover skills within walking or driving distance.
+        <div className="px-6 py-4.5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/60">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <NeighborLyLogo size="xs" variant="icon" />
+              <h2 className="text-base sm:text-lg font-heading font-extrabold text-zinc-950">
+                Set Your Neighborhood
+              </h2>
+            </div>
+            <p className="text-xs text-zinc-500">
+              Discover vetted local skills within walking or driving distance.
             </p>
           </div>
           <button

@@ -37,8 +37,12 @@ import { AuthModal } from './components/AuthModal';
 import { ChatOrderModal } from './components/ChatOrderModal';
 import { MyTasksOrdersView } from './components/MyTasksOrdersView';
 import { AiAssistantModal } from './components/AiAssistantModal';
+import { AiChatbotWidget } from './components/AiChatbotWidget';
 import { AdminDashboard } from './components/AdminDashboard';
 import { NeighborLyLogo } from './components/NeighborLyLogo';
+import { MobileBottomNav } from './components/MobileBottomNav';
+import { getAdminSession } from './utils/adminAuth';
+import { updateDynamicMetaTags } from './utils/seo';
 import { 
   MapPin, 
   ShieldCheck, 
@@ -57,7 +61,7 @@ export default function App() {
   // Authentication State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => getSavedAuthUser());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | 'forgot_password'>('login');
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | 'forgot_password' | 'admin'>('login');
 
   // Location State ("Select work from my current location")
   const [currentLocation, setCurrentLocation] = useState<LocationPoint>(() => {
@@ -67,16 +71,21 @@ export default function App() {
   const [isWorkFromCurrentLocation, setIsWorkFromCurrentLocation] = useState<boolean>(true);
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
 
-  // Navigation View
+  // Navigation View & AI Chatbot State
   const [activeView, setActiveView] = useState<'home' | 'browse' | 'orders' | 'ai' | 'admin' | 'auth'>('home');
-  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
-  // Sync Hash for direct navigation (e.g. #/admin, #login, #signup)
+  // Sync Hash for direct navigation (e.g. #admin, #login, #signup)
   useEffect(() => {
     const handleHash = () => {
       const hash = window.location.hash.toLowerCase();
       if (hash === '#admin') {
-        setActiveView('admin');
+        if (getAdminSession()) {
+          setActiveView('admin');
+        } else {
+          setAuthModalMode('admin');
+          setActiveView('auth');
+        }
       } else if (hash === '#login') {
         setAuthModalMode('login');
         setActiveView('auth');
@@ -148,6 +157,81 @@ export default function App() {
   useEffect(() => {
     saveStoredMessages(messages);
   }, [messages]);
+
+  // Dynamic SEO, OpenGraph, and Twitter Meta Tags Synchronization
+  useEffect(() => {
+    const neighborhood = currentLocation.neighborhood || currentLocation.city || 'Neighborhood';
+    const city = currentLocation.city || 'Bengaluru';
+
+    if (selectedService) {
+      updateDynamicMetaTags({
+        title: `${selectedService.title} by ${selectedService.provider.name} (₹${selectedService.price}) — NeighborLy`,
+        description: `${selectedService.description.slice(0, 140)}... Verified neighbor in ${selectedService.location?.neighborhood || neighborhood}. Escrow-Lite payment protection guaranteed.`,
+        image: selectedService.provider?.avatar,
+        type: 'product',
+      });
+      return;
+    }
+
+    switch (activeView) {
+      case 'home':
+        updateDynamicMetaTags({
+          title: `NeighborLy — Hyperlocal Skills & Gigs in ${neighborhood}, ${city}`,
+          description: `Find trusted neighbors for home repairs, tech setup, pet care & tutoring near ${neighborhood} with 0% platform fee and Escrow-Lite safety.`,
+          type: 'website',
+        });
+        break;
+
+      case 'browse': {
+        const catText = selectedCategory !== 'All' ? selectedCategory : 'Verified Services';
+        updateDynamicMetaTags({
+          title: `Explore ${catText} near ${neighborhood} — NeighborLy`,
+          description: `Browse ${services.length} active neighborhood skill listings and gigs within ${radiusKm}km of ${neighborhood}, ${city}. Book with Escrow-Lite.`,
+          type: 'website',
+        });
+        break;
+      }
+
+      case 'orders':
+        updateDynamicMetaTags({
+          title: `My Tasks & Orders (${orders.length}) — NeighborLy`,
+          description: `Track your active neighborhood service orders, direct neighbor chat messages, and approve Escrow-Lite fund releases.`,
+          type: 'website',
+        });
+        break;
+
+      case 'ai':
+        updateDynamicMetaTags({
+          title: `Neighborly AI Assistant (Gemini 3.8 Flash) — NeighborLy`,
+          description: `Ask the Neighborly AI Assistant for local task matching, fair neighbor rate estimates, and task drafting in ${neighborhood}.`,
+          type: 'website',
+        });
+        break;
+
+      case 'admin':
+        updateDynamicMetaTags({
+          title: `Administrative Command Center — NeighborLy`,
+          description: `Restricted administrative gateway for hyperlocal marketplace moderation, escrow vault auditing, and dispute settlements.`,
+          type: 'website',
+        });
+        break;
+
+      case 'auth':
+        updateDynamicMetaTags({
+          title: `${authModalMode === 'signup' ? 'Create Your Account' : authModalMode === 'admin' ? 'Admin Gateway' : 'Sign In'} — NeighborLy`,
+          description: `Join NeighborLy to hire nearby helpers or earn by offering skills in ${neighborhood} with full Escrow-Lite security.`,
+          type: 'website',
+        });
+        break;
+
+      default:
+        updateDynamicMetaTags({
+          title: `NeighborLy — Hyperlocal Skills & Task Marketplace`,
+          description: `Hyperlocal peer-to-peer neighborhood marketplace to find and offer local services, gigs, and tasks right from your current location with Escrow-Lite security.`,
+          type: 'website',
+        });
+    }
+  }, [activeView, selectedService, selectedCategory, currentLocation, radiusKm, services.length, orders.length, authModalMode]);
 
   // Detect GPS location on initial load if available
   const handleDetectGPS = async () => {
@@ -438,7 +522,7 @@ export default function App() {
           if (!currentUser) requireAuth('signup');
           else setIsPostServiceOpen(true);
         }}
-        onOpenAiAssistant={() => setIsAiModalOpen(true)}
+        onOpenAiAssistant={() => setIsChatbotOpen(true)}
         activeOrdersCount={activeOrdersCount}
       />
 
@@ -598,55 +682,34 @@ export default function App() {
               handleAuthSuccess(user);
               setActiveView('home');
             }}
+            onAdminSuccess={() => {
+              setActiveView('admin');
+              showToast('Authenticated to Administrative Command Center');
+            }}
             currentLocation={currentLocation}
             initialMode={authModalMode}
           />
         )}
       </main>
 
-      {/* Floating AI Assistant Trigger Button (Always available in bottom right) */}
-      <button
-        onClick={() => setIsAiModalOpen(true)}
-        className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl p-3 sm:px-4 sm:py-3 shadow-soft-xl border border-zinc-700/80 flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 cursor-pointer group"
-        title="Open Neighborly AI Assistant"
-      >
-        <div className="w-6 h-6 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0">
-          <Sparkles className="w-3.5 h-3.5" />
-        </div>
-        <div className="hidden sm:flex flex-col text-left">
-          <span className="text-xs font-bold leading-tight flex items-center gap-1.5">
-            <span>AI Assistant</span>
-            <span className="text-[9px] bg-indigo-500/30 text-indigo-300 font-extrabold px-1.5 py-0.2 rounded">Gemini</span>
-          </span>
-          <span className="text-[10px] text-zinc-400">Ask rates & match skills</span>
-        </div>
-      </button>
-
-      {/* Floating AI Assistant Modal */}
-      {isAiModalOpen && (
-        <AiAssistantModal
-          isOpen={isAiModalOpen}
-          onClose={() => setIsAiModalOpen(false)}
-          currentLocation={currentLocation}
-          services={services}
-          requests={requests}
-          currentUser={currentUser}
-          onSelectService={(s) => {
-            setSelectedService(s);
-            setIsAiModalOpen(false);
-          }}
-          onOpenPostRequest={() => {
-            setIsAiModalOpen(false);
-            if (!currentUser) requireAuth('signup');
-            else setIsPostRequestOpen(true);
-          }}
-          onOpenPostService={() => {
-            setIsAiModalOpen(false);
-            if (!currentUser) requireAuth('signup');
-            else setIsPostServiceOpen(true);
-          }}
-        />
-      )}
+      {/* Floating Production-Grade AI Assistance Chat Bot */}
+      <AiChatbotWidget
+        currentLocation={currentLocation}
+        services={services}
+        requests={requests}
+        currentUser={currentUser}
+        onSelectService={(s) => setSelectedService(s)}
+        onOpenPostRequest={() => {
+          if (!currentUser) requireAuth('signup');
+          else setIsPostRequestOpen(true);
+        }}
+        onOpenPostService={() => {
+          if (!currentUser) requireAuth('signup');
+          else setIsPostServiceOpen(true);
+        }}
+        isOpen={isChatbotOpen}
+        onToggleOpen={() => setIsChatbotOpen(!isChatbotOpen)}
+      />
 
       {/* Mobile Persistent Bottom Navigation Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-zinc-200/80 shadow-soft-lg md:hidden">
@@ -724,6 +787,10 @@ export default function App() {
         <AuthModal
           onClose={() => setIsAuthModalOpen(false)}
           onSuccess={handleAuthSuccess}
+          onAdminSuccess={() => {
+            setActiveView('admin');
+            showToast('Authenticated to Administrative Command Center');
+          }}
           currentLocation={currentLocation}
           initialMode={authModalMode}
         />
@@ -793,7 +860,7 @@ export default function App() {
       <footer className="bg-white border-t border-zinc-200/80 mt-16 sm:mt-24 py-14 sm:py-16 text-zinc-500 text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-4 gap-10">
           <div className="space-y-4">
-            <NeighborLyLogo size="md" showTagline={true} tagline="Local Skills · Real Opportunities" />
+            <NeighborLyLogo size="md" showTagline={true} tagline="Students Helping Students" />
             <p className="text-zinc-500 leading-relaxed text-xs">
               Hyperlocal neighborhood skills & task marketplace. Connect with nearby neighbors to get help affordably and reliably.
             </p>
@@ -819,7 +886,22 @@ export default function App() {
               <li><button onClick={() => { setAuthModalMode('signup'); setActiveView('auth'); }} className="hover:text-zinc-950 cursor-pointer">Google & Email Verification</button></li>
               <li><button onClick={() => setIsLocationPickerOpen(true)} className="hover:text-zinc-950 cursor-pointer">Work From Current Location</button></li>
               <li><button onClick={() => showToast('Escrow holds payment until you approve the task.')} className="hover:text-zinc-950 cursor-pointer">Escrow Payment Protection</button></li>
-              <li><button onClick={() => setActiveView('admin')} className="hover:text-blue-600 font-semibold cursor-pointer flex items-center gap-1"><span>Admin Command Portal</span> →</button></li>
+              <li>
+                <button 
+                  onClick={() => {
+                    const session = getAdminSession();
+                    if (session) {
+                      setActiveView('admin');
+                    } else {
+                      setAuthModalMode('admin');
+                      setIsAuthModalOpen(true);
+                    }
+                  }} 
+                  className="hover:text-blue-600 font-semibold cursor-pointer flex items-center gap-1"
+                >
+                  <span>Admin Command Portal</span> →
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -853,6 +935,26 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Mobile Bottom Navigation Bar (Phone & Tablet) */}
+      <MobileBottomNav
+        activeView={activeView}
+        onNavigate={(view) => setActiveView(view)}
+        currentUser={currentUser}
+        onOpenAuth={(mode) => {
+          setAuthModalMode(mode || 'login');
+          setActiveView('auth');
+        }}
+        onOpenPostTask={() => {
+          if (!currentUser) requireAuth('signup');
+          else setIsPostRequestOpen(true);
+        }}
+        onOpenPostSkill={() => {
+          if (!currentUser) requireAuth('signup');
+          else setIsPostServiceOpen(true);
+        }}
+        activeOrdersCount={activeOrdersCount}
+      />
 
     </div>
   );

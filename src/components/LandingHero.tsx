@@ -18,6 +18,9 @@ import {
 } from 'lucide-react';
 import { ServiceCategory, LocationPoint } from '../types';
 import { NeighborLyLogo } from './NeighborLyLogo';
+import { BrandIconTile } from './BrandIconTile';
+import { StudentMascot } from './StudentMascot';
+import { ModernPremiumCard } from './ModernPremiumCard';
 
 interface LandingHeroProps {
   onSearch: (query: string) => void;
@@ -45,6 +48,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   onPostService,
 }) => {
   const [searchInput, setSearchInput] = useState('');
+  const [heroCardTab, setHeroCardTab] = useState<'radar' | 'premium'>('radar');
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,8 +104,23 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   ];
 
   return (
-    <div className="relative border-b border-zinc-200/70 bg-gradient-to-b from-white via-zinc-50/40 to-white py-12 sm:py-16 md:py-20 lg:py-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="relative border-b border-zinc-200/70 bg-gradient-to-b from-white via-zinc-50/50 to-white py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
+      {/* Modern Premium Ambient Background Aurora & Luminous "N" Watermark (Inspired by Image 1 Item 1) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
+        <div className="absolute -top-36 -left-36 w-[450px] h-[450px] bg-cyan-400/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -right-36 w-[550px] h-[550px] bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-24 left-1/3 w-[650px] h-[350px] bg-blue-500/8 rounded-full blur-3xl" />
+        
+        {/* Subtle Giant Floating "N" Watermark in Background */}
+        <div className="absolute -right-12 top-8 opacity-[0.035] text-purple-900 pointer-events-none rotate-6 scale-150">
+          <NeighborLyLogo size="2xl" variant="watermark" />
+        </div>
+        <div className="absolute -left-16 bottom-8 opacity-[0.025] text-cyan-900 pointer-events-none -rotate-12 scale-125">
+          <NeighborLyLogo size="2xl" variant="watermark" />
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Main Hero Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
@@ -182,93 +201,160 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
             </div>
 
             {/* 3 Clean Trust Points (Unboxed metadata style) */}
-            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-zinc-100 max-w-xl">
+            <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 xs:gap-4 pt-6 border-t border-zinc-100 max-w-xl">
               <div>
-                <p className="text-xs sm:text-sm font-bold text-zinc-900">Hyperlocal</p>
+                <p className="text-xs sm:text-sm font-bold text-zinc-950">Hyperlocal</p>
                 <p className="text-[11px] text-zinc-500 mt-0.5">Under {radiusKm}km radius</p>
               </div>
               <div>
-                <p className="text-xs sm:text-sm font-bold text-zinc-900">Escrow Protected</p>
+                <p className="text-xs sm:text-sm font-bold text-zinc-950">Escrow Protected</p>
                 <p className="text-[11px] text-zinc-500 mt-0.5">Pay only when satisfied</p>
               </div>
               <div>
-                <p className="text-xs sm:text-sm font-bold text-zinc-900">Zero Agency Fees</p>
+                <p className="text-xs sm:text-sm font-bold text-zinc-950">Zero Agency Fees</p>
                 <p className="text-[11px] text-zinc-500 mt-0.5">Direct neighbor rates</p>
               </div>
             </div>
 
           </div>
 
-          {/* Right Column: Clean Community Hub Spotlight */}
-          <div className="lg:col-span-5">
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/80 shadow-soft-lg space-y-6 relative overflow-hidden">
-              
-              {/* Header inside radar card */}
-              <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
-                <div className="space-y-1">
-                  <span className="text-[11px] uppercase tracking-wider font-bold text-zinc-400">Neighborhood Hub</span>
-                  <h3 className="text-lg font-bold text-zinc-950">{currentLocation.neighborhood}</h3>
-                </div>
-                <button
-                  onClick={onOpenLocationPicker}
-                  className="px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50/80 hover:bg-blue-100/70 rounded-xl transition-colors cursor-pointer"
-                >
-                  Adjust Radius
-                </button>
-              </div>
-
-              {/* Proximity Information Card with subtle shadow */}
-              <div className="space-y-4 bg-zinc-50/80 rounded-2xl p-5 border border-zinc-200/60 shadow-2xs">
-                <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-white border border-zinc-200/80 shadow-soft-xs flex items-center justify-center shrink-0 text-blue-600">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs sm:text-sm font-bold text-zinc-900">Active Hyperlocal Radar</p>
-                    <p className="text-xs text-zinc-500 leading-relaxed">
-                      Showing vetted services within <strong className="text-zinc-800 font-semibold">{radiusKm} km</strong> of {currentLocation.neighborhood}, {currentLocation.city}.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-zinc-200/60 flex items-center justify-between text-xs text-zinc-600">
-                  <span className="flex items-center gap-2">
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                    </span>
-                    <span className="font-medium text-zinc-700">GPS Live Tracking</span>
-                  </span>
-                  <span className="font-semibold text-zinc-900">Direct booking</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3 pt-1">
-                <button
-                  type="button"
-                  onClick={onPostRequest}
-                  className="w-full py-3.5 px-5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-soft hover:shadow-soft-md hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  <span>Post a Task Needed</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={onPostService}
-                  className="w-full py-3.5 px-5 bg-zinc-50 hover:bg-zinc-100 text-zinc-800 rounded-2xl text-xs sm:text-sm font-semibold border border-zinc-200/90 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs hover:shadow-soft-xs"
-                >
-                  <span>Offer a Skill / Service</span>
-                </button>
-              </div>
-
+          {/* Right Column: Clean Community Hub Spotlight or Modern Premium Card */}
+          <div className="lg:col-span-5 space-y-3">
+            {/* View Switcher Pills */}
+            <div className="flex items-center justify-end gap-1.5 p-1 bg-zinc-100/90 rounded-2xl w-fit ml-auto border border-zinc-200/60 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setHeroCardTab('radar')}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  heroCardTab === 'radar'
+                    ? 'bg-white text-zinc-950 shadow-soft-xs'
+                    : 'text-zinc-500 hover:text-zinc-800'
+                }`}
+              >
+                Neighborhood Radar
+              </button>
+              <button
+                type="button"
+                onClick={() => setHeroCardTab('premium')}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  heroCardTab === 'premium'
+                    ? 'bg-zinc-950 text-white shadow-soft-xs'
+                    : 'text-zinc-500 hover:text-zinc-800'
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                Modern Premium
+              </button>
             </div>
+
+            {heroCardTab === 'premium' ? (
+              <ModernPremiumCard size="md" />
+            ) : (
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/80 shadow-soft-lg space-y-6 relative overflow-hidden">
+                
+                {/* Header inside radar card */}
+                <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
+                  <div className="flex items-center gap-3">
+                    <NeighborLyLogo size="sm" variant="icon" />
+                    <div className="space-y-0.5">
+                      <span className="text-[11px] uppercase tracking-wider font-bold text-zinc-400">Neighborhood Hub</span>
+                      <h3 className="text-base sm:text-lg font-bold text-zinc-950">{currentLocation.neighborhood}</h3>
+                    </div>
+                  </div>
+                  <button
+                    onClick={onOpenLocationPicker}
+                    className="px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50/80 hover:bg-blue-100/70 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Adjust Radius
+                  </button>
+                </div>
+
+                {/* Proximity Information Card with subtle shadow */}
+                <div className="space-y-4 bg-zinc-50/80 rounded-2xl p-5 border border-zinc-200/60 shadow-2xs">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-10 h-10 rounded-2xl bg-white border border-zinc-200/80 shadow-soft-xs flex items-center justify-center shrink-0 text-blue-600">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs sm:text-sm font-bold text-zinc-900">Active Hyperlocal Radar</p>
+                      <p className="text-xs text-zinc-500 leading-relaxed">
+                        Showing vetted services within <strong className="text-zinc-800 font-semibold">{radiusKm} km</strong> of {currentLocation.neighborhood}, {currentLocation.city}.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-zinc-200/60 flex items-center justify-between text-xs text-zinc-600">
+                    <span className="flex items-center gap-2">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                      </span>
+                      <span className="font-medium text-zinc-700">GPS Live Tracking</span>
+                    </span>
+                    <span className="font-semibold text-zinc-900">Direct booking</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={onPostRequest}
+                    className="w-full py-3.5 px-5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-soft hover:shadow-soft-md hover:-translate-y-0.5 active:translate-y-0"
+                  >
+                    <span>Post a Task Needed</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onPostService}
+                    className="w-full py-3.5 px-5 bg-zinc-50 hover:bg-zinc-100 text-zinc-800 rounded-2xl text-xs sm:text-sm font-semibold border border-zinc-200/90 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs hover:shadow-soft-xs"
+                  >
+                    <span>Offer a Skill / Service</span>
+                  </button>
+                </div>
+
+              </div>
+            )}
           </div>
 
         </div>
 
+        {/* Student Community Mascot Banner (Image 2, Item 11) */}
+        <div className="mt-12 sm:mt-16">
+          <StudentMascot variant="banner" showTags={true} />
+        </div>
+
+        {/* Brand Elements Bar (Image 1 Item 18 & Image 2 Item 16: Education, Work, Community, Chat, Trusted, Local, Growth, Support) */}
+        <div className="mt-12 sm:mt-16 pt-8 pb-2 border-t border-zinc-200/60">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+            <div>
+              <span className="text-[10px] font-extrabold tracking-widest text-purple-600 uppercase">
+                Campus & Neighborhood Ecosystem
+              </span>
+              <h3 className="text-base sm:text-lg font-heading font-extrabold text-zinc-950 mt-0.5">
+                Students Helping Students
+              </h3>
+            </div>
+            <p className="text-xs text-zinc-500 max-w-sm">
+              Discover verified campus tutors, student freelancers, tech troubleshooting, and neighbor support.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 sm:gap-4 py-2">
+            <BrandIconTile type="education" showLabel size="md" onClick={() => { onSelectCategory('Lessons & Tutoring'); onNavigateBrowse(); }} />
+            <BrandIconTile type="work" showLabel size="md" onClick={() => { onSelectCategory('Home & Repairs'); onNavigateBrowse(); }} />
+            <BrandIconTile type="community" showLabel size="md" onClick={() => { onSelectCategory('All'); onNavigateBrowse(); }} />
+            <BrandIconTile type="chat" showLabel size="md" onClick={() => { onSelectCategory('Others'); onNavigateBrowse(); }} />
+            <BrandIconTile type="trusted" showLabel size="md" onClick={() => { onSelectCategory('All'); onNavigateBrowse(); }} />
+            <BrandIconTile type="local" showLabel size="md" onClick={onOpenLocationPicker} />
+            <BrandIconTile type="growth" showLabel size="md" onClick={() => { onSelectCategory('Tech & Digital'); onNavigateBrowse(); }} />
+            <BrandIconTile type="support" showLabel size="md" onClick={() => { onSelectCategory('Errands & Delivery'); onNavigateBrowse(); }} />
+          </div>
+        </div>
+
         {/* Category Row (Responsive scroll on mobile, clean grid on desktop) */}
-        <div className="mt-14 sm:mt-20 pt-10 sm:pt-12 border-t border-zinc-200/60">
+        <div className="mt-10 sm:mt-14 pt-8 sm:pt-10 border-t border-zinc-200/60">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-lg sm:text-xl font-heading font-extrabold text-zinc-950">Explore by Category</h2>

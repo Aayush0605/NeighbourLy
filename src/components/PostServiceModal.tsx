@@ -9,6 +9,7 @@ import {
   Briefcase
 } from 'lucide-react';
 import { ServiceCategory, LocationPoint, ServiceListing, UserProfile } from '../types';
+import { NeighborLyLogo } from './NeighborLyLogo';
 
 interface PostServiceModalProps {
   onClose: () => void;
@@ -88,12 +89,15 @@ export const PostServiceModal: React.FC<PostServiceModalProps> = ({
       >
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/60 shrink-0">
-          <div>
-            <h2 className="text-base sm:text-lg font-heading font-extrabold text-zinc-950">
-              Offer a Skill in Your Neighborhood
-            </h2>
-            <p className="text-xs text-zinc-500 mt-0.5">
+        <div className="px-6 py-4.5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/60 shrink-0">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <NeighborLyLogo size="xs" variant="icon" />
+              <h2 className="text-base sm:text-lg font-heading font-extrabold text-zinc-950">
+                Offer a Skill in Your Neighborhood
+              </h2>
+            </div>
+            <p className="text-xs text-zinc-500">
               List what you can help with. Neighbors can book your fixed-price service.
             </p>
           </div>

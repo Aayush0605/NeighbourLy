@@ -42,32 +42,33 @@ async function startServer() {
 
       // If Gemini API is configured, call gemini-3.8-flash
       if (ai) {
-        const systemPrompt = `You are "Neighborly AI Assistant", the friendly and hyper-local intelligence for NeighborLy — a peer-to-peer neighborhood skills & task marketplace (like Fiverr & Freelancer combined with hyperlocal GPS proximity and Escrow-Lite security).
+        try {
+          const systemPrompt = `You are "Neighborly AI Assistant", the friendly and hyper-local intelligence for NeighborLy — a peer-to-peer neighborhood skills & task marketplace (like Fiverr & Freelancer combined with hyperlocal GPS proximity and Escrow-Lite security).
 
 Current User Context:
 - User Location: ${JSON.stringify(userLocation || 'Nearby neighborhood')}
 - Current Filter/Category: ${activeCategory || 'All'}
 - Available Local Services Sample: ${JSON.stringify(
-          (localServices || []).slice(0, 10).map((s: any) => ({
-            id: s.id,
-            title: s.title,
-            category: s.category,
-            price: s.price,
-            provider: s.provider?.name,
-            neighborhood: s.location?.neighborhood,
-            distanceKm: s.distanceKm,
-            rating: s.rating,
-          }))
-        )}
+            (localServices || []).slice(0, 10).map((s: any) => ({
+              id: s.id,
+              title: s.title,
+              category: s.category,
+              price: s.price,
+              provider: s.provider?.name,
+              neighborhood: s.location?.neighborhood,
+              distanceKm: s.distanceKm,
+              rating: s.rating,
+            }))
+          )}
 - Active Open Task Requests: ${JSON.stringify(
-          (taskRequests || []).slice(0, 5).map((r: any) => ({
-            id: r.id,
-            title: r.title,
-            budget: r.budget,
-            category: r.category,
-            deadline: r.deadline,
-          }))
-        )}
+            (taskRequests || []).slice(0, 5).map((r: any) => ({
+              id: r.id,
+              title: r.title,
+              budget: r.budget,
+              category: r.category,
+              deadline: r.deadline,
+            }))
+          )}
 
 Your capabilities:
 1. Recommend specific local neighbor listings that match what the user is looking for (quote prices in ₹ INR, provider name, and approximate distance).
@@ -76,18 +77,22 @@ Your capabilities:
 4. Explain Neighborly's Escrow-Lite payment protection (money held safely until buyer confirms completion, 0% platform fee, direct UPI payout).
 5. Always be warm, neighborhood-focused, concise, and helpful. Use formatting with bullet points and bold highlights. Keep responses concise (under 200 words).`;
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents: prompt,
-          config: {
-            systemInstruction: systemPrompt,
-            temperature: 0.7,
-          },
-        });
+          const response = await ai.models.generateContent({
+            model: 'gemini-3.8-flash',
+            contents: prompt,
+            config: {
+              systemInstruction: systemPrompt,
+              temperature: 0.7,
+            },
+          });
 
-        const reply = response.text || 'I am here to help you connect with skilled neighbors in your area!';
-        res.json({ reply, provider: 'gemini-3.8-flash' });
-        return;
+          const reply = response.text || 'I am here to help you connect with skilled neighbors in your area!';
+          res.json({ reply, provider: 'gemini-3.8-flash' });
+          return;
+        } catch (geminiErr) {
+          console.warn('Gemini generateContent error, switching to intelligent local fallback:', geminiErr);
+          // Fall through to intelligent local matcher
+        }
       }
 
       // Fallback intelligent local matcher if GEMINI_API_KEY is not set

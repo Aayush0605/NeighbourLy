@@ -10,36 +10,47 @@ import {
   Eye, 
   EyeOff,
   ShieldCheck,
+  ShieldAlert,
+  KeyRound,
   MapPin,
   Sparkles,
   Check
 } from 'lucide-react';
 import { UserProfile, LocationPoint } from '../types';
 import { loginWithGoogle, loginWithCredentials, registerWithCredentials, resetUserPassword } from '../utils/auth';
+import { loginAdmin } from '../utils/adminAuth';
 import { NeighborLyLogo } from './NeighborLyLogo';
+import { StudentMascot } from './StudentMascot';
 
 interface AuthModalProps {
   onClose: () => void;
   onSuccess: (user: UserProfile) => void;
+  onAdminSuccess?: () => void;
   currentLocation: LocationPoint;
-  initialMode?: 'login' | 'signup' | 'forgot_password';
+  initialMode?: 'login' | 'signup' | 'forgot_password' | 'admin';
   isEmbeddedPage?: boolean;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   onSuccess,
+  onAdminSuccess,
   currentLocation,
   initialMode = 'login',
   isEmbeddedPage = false,
 }) => {
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot_password'>(initialMode);
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot_password' | 'admin'>(initialMode);
   
   // Login form state
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+
+  // Admin form state
+  const [adminIdentifier, setAdminIdentifier] = useState('admin@neighborly.in');
+  const [adminPassword, setAdminPassword] = useState('admin');
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
   // Sign up form state
   const [signupName, setSignupName] = useState('');
@@ -74,7 +85,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  // Handle Login Submit
+  // Handle Login Submit (with smart admin credential detection)
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginIdentifier.trim() || !loginPassword.trim()) {
@@ -90,7 +101,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       onSuccess(user);
       onClose();
     } catch (err: any) {
+      // Smart admin detection: check if credentials match the special administrator
+      try {
+        loginAdmin(loginIdentifier, loginPassword);
+        if (onAdminSuccess) {
+          onAdminSuccess();
+        }
+        onClose();
+        return;
+      } catch {
+        // Not admin either
+      }
       setErrorMessage(err.message || 'Invalid credentials. Please verify your details or reset your password.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle dedicated Admin Submit
+  const handleAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminIdentifier.trim() || !adminPassword.trim()) {
+      setErrorMessage('Please enter both admin identifier and master key.');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      loginAdmin(adminIdentifier, adminPassword);
+      if (onAdminSuccess) {
+        onAdminSuccess();
+      }
+      onClose();
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Access denied. Invalid administrator credentials.');
     } finally {
       setIsLoading(false);
     }
@@ -198,44 +244,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
         
-        {/* Left Side: Brand Glass Showcase (inspired by uploaded mockups) */}
-        <div className="hidden lg:flex lg:col-span-5 flex-col justify-between p-8 sm:p-10 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-white relative overflow-hidden">
-          {/* Subtle geometric pattern overlay */}
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#3B82F6_1px,transparent_1px)] [background-size:16px_16px]" />
+        {/* Left Side: Brand Glass Showcase with Modern Premium Aurora (Image 1 & Image 2) */}
+        <div className="hidden lg:flex lg:col-span-5 flex-col justify-between p-8 sm:p-10 bg-gradient-to-br from-[#120F26] via-[#090714] to-zinc-950 text-white relative overflow-hidden">
+          {/* Luminous Ambient Aurora Glows */}
+          <div className="absolute -top-16 -left-16 w-52 h-52 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -right-16 w-52 h-52 bg-purple-500/25 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 left-1/4 w-36 h-36 bg-blue-600/15 rounded-full blur-2xl pointer-events-none" />
+
+          {/* Background 'N' watermark */}
+          <div className="absolute -right-8 top-16 opacity-10 text-purple-400 pointer-events-none rotate-12 scale-125">
+            <NeighborLyLogo size="2xl" variant="watermark" />
+          </div>
           
           <div className="relative z-10 space-y-6">
-            <NeighborLyLogo size="lg" theme="dark" showTagline={true} tagline="Local Skills · Real Opportunities" />
+            <NeighborLyLogo size="lg" theme="dark" showTagline={true} tagline="Students Helping Students" />
             
-            <div className="pt-6 space-y-3">
-              <h3 className="text-2xl font-heading font-extrabold leading-tight text-white">
-                Hyperlocal trust, <br />
-                <span className="text-blue-400">zero intermediary cut.</span>
+            <div className="pt-4 space-y-3">
+              <h3 className="text-2xl font-heading font-black leading-tight text-white">
+                Learn · Earn · Grow, <br />
+                <span className="text-purple-400">right on your campus.</span>
               </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed font-normal">
-                Join thousands of verified neighbors helping neighbors with home fixes, pet care, tutoring, and technology tasks.
+              <p className="text-xs text-zinc-300 leading-relaxed font-normal">
+                Join thousands of students and neighbors exchanging assignment help, coding, tech fixes, tutoring, and local daily tasks.
               </p>
             </div>
           </div>
 
-          {/* Trust Highlights Glass Cards */}
-          <div className="relative z-10 space-y-3 pt-6">
-            <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md space-y-1">
+          {/* Student Mascot Speech Tip & Trust Highlights */}
+          <div className="relative z-10 space-y-3 pt-4">
+            <StudentMascot variant="speech" className="bg-white/10 rounded-2xl p-2.5 backdrop-blur-md border border-white/10" />
+
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md space-y-1">
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
                 <ShieldCheck className="w-4 h-4" />
                 <span>Escrow-Lite Protection</span>
               </div>
               <p className="text-[11px] text-zinc-300">
-                Payment is held securely and only released when you approve the delivered work.
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md space-y-1">
-              <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
-                <MapPin className="w-4 h-4" />
-                <span>{currentLocation.neighborhood}, {currentLocation.city}</span>
-              </div>
-              <p className="text-[11px] text-zinc-300">
-                GPS-verified proximity ensuring helpers are right in your vicinity.
+                Payment is held securely and only released when you approve the delivered task.
               </p>
             </div>
           </div>
@@ -253,9 +298,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <NeighborLyLogo size="md" showTagline={true} />
           </div>
 
-          {/* Mode Tabs (Login / Sign Up) */}
+          {/* Mode Tabs (Login / Sign Up / Admin Gateway) */}
           {mode !== 'forgot_password' && (
-            <div className="flex items-center p-1 bg-zinc-100/90 rounded-2xl mb-6 max-w-xs border border-zinc-200/60">
+            <div className="flex items-center p-1 bg-zinc-100/90 rounded-2xl mb-6 max-w-sm border border-zinc-200/60">
               <button
                 type="button"
                 onClick={() => {
@@ -284,6 +329,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               >
                 Sign Up
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('admin');
+                  setErrorMessage(null);
+                }}
+                className={`py-2 px-3 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
+                  mode === 'admin'
+                    ? 'bg-zinc-950 text-white shadow-soft-xs'
+                    : 'text-zinc-500 hover:text-zinc-900'
+                }`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                <span>Admin</span>
+              </button>
             </div>
           )}
 
@@ -293,11 +353,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {mode === 'login' && 'Welcome back, neighbor'}
               {mode === 'signup' && 'Create your free account'}
               {mode === 'forgot_password' && 'Reset account password'}
+              {mode === 'admin' && 'Administrative Command Gateway'}
             </h2>
             <p className="text-xs text-zinc-500">
               {mode === 'login' && 'Enter your credentials to access orders, messages and listed skills.'}
               {mode === 'signup' && 'Connect with local neighbors to book gigs or earn by offering services.'}
               {mode === 'forgot_password' && 'Enter your email or username to regain access to your account.'}
+              {mode === 'admin' && 'Restricted access for marketplace moderators and escrow officers.'}
             </p>
           </div>
 
@@ -309,8 +371,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {/* Google Auth Button (prominent in inspired designs) */}
-          {mode !== 'forgot_password' && (
+          {/* Google Auth Button (prominent in inspired designs, hidden for admin) */}
+          {mode !== 'forgot_password' && mode !== 'admin' && (
             <div className="space-y-4 mb-5">
               <button
                 type="button"
@@ -421,6 +483,108 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <span>{isLoading ? 'Signing In...' : 'Log In to Neighborly'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('admin');
+                    setErrorMessage(null);
+                  }}
+                  className="text-[11px] text-zinc-400 hover:text-zinc-700 font-medium inline-flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <KeyRound className="w-3 h-3 text-amber-500" />
+                  <span>Administrative Portal Sign In</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Form: Admin Special Credentials */}
+          {mode === 'admin' && (
+            <form onSubmit={handleAdminSubmit} className="space-y-4">
+              <div className="p-3.5 bg-zinc-900 text-zinc-300 border border-zinc-800 rounded-2xl text-xs space-y-1.5 shadow-soft-xs">
+                <div className="flex items-center justify-between font-bold text-white">
+                  <span className="flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Special Admin Credentials</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdminIdentifier('admin@neighborly.in');
+                      setAdminPassword('admin');
+                    }}
+                    className="text-[10px] text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                  >
+                    Quick Fill
+                  </button>
+                </div>
+                <div className="text-[11px] text-zinc-400 font-mono flex items-center justify-between pt-0.5">
+                  <span>Username: <strong className="text-white">admin</strong></span>
+                  <span>Master Key: <strong className="text-white">admin</strong></span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-800">Admin Identifier or Email</label>
+                <div className="relative flex items-center bg-zinc-50/90 border border-zinc-200/90 rounded-2xl px-3.5 py-2.5 focus-within:border-zinc-950 focus-within:bg-white shadow-2xs">
+                  <User className="w-4 h-4 text-zinc-400 mr-2.5 shrink-0" />
+                  <input
+                    type="text"
+                    required
+                    value={adminIdentifier}
+                    onChange={(e) => setAdminIdentifier(e.target.value)}
+                    placeholder="admin@neighborly.in or admin"
+                    className="w-full text-xs sm:text-sm text-zinc-900 bg-transparent focus:outline-none placeholder:text-zinc-400 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-800">Administrator Master Key</label>
+                <div className="relative flex items-center bg-zinc-50/90 border border-zinc-200/90 rounded-2xl px-3.5 py-2.5 focus-within:border-zinc-950 focus-within:bg-white shadow-2xs">
+                  <Lock className="w-4 h-4 text-zinc-400 mr-2.5 shrink-0" />
+                  <input
+                    type={showAdminPassword ? 'text' : 'password'}
+                    required
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="Enter admin master password"
+                    className="w-full text-xs sm:text-sm text-zinc-900 bg-transparent focus:outline-none placeholder:text-zinc-400 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminPassword(!showAdminPassword)}
+                    className="text-zinc-400 hover:text-zinc-700 ml-1 p-0.5 cursor-pointer"
+                  >
+                    {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3.5 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-50 text-white rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-soft hover:shadow-soft-md mt-2"
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>{isLoading ? 'Verifying Admin Gate...' : 'Authenticate to Command Center'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setErrorMessage(null);
+                  }}
+                  className="text-xs text-zinc-500 hover:text-zinc-900 font-medium cursor-pointer"
+                >
+                  ← Return to regular neighbor login
+                </button>
+              </div>
             </form>
           )}
 
@@ -643,6 +807,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   className="font-bold text-zinc-950 hover:underline cursor-pointer ml-1"
                 >
                   Log In
+                </button>
+              </p>
+            )}
+            {mode === 'admin' && (
+              <p className="text-zinc-500 text-[11px]">
+                Restricted to authorized Neighborly marketplace staff. Regular users{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setErrorMessage(null);
+                  }}
+                  className="font-bold text-zinc-950 hover:underline cursor-pointer ml-1"
+                >
+                  Log In here
                 </button>
               </p>
             )}

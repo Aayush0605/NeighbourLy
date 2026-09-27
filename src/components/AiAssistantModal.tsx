@@ -16,6 +16,8 @@ import {
   Compass
 } from 'lucide-react';
 import { ServiceListing, TaskRequest, LocationPoint, UserProfile } from '../types';
+import { NeighborLyLogo } from './NeighborLyLogo';
+import { StudentMascot } from './StudentMascot';
 
 interface AiAssistantProps {
   isOpen?: boolean;
@@ -144,19 +146,19 @@ export const AiAssistantModal: React.FC<AiAssistantProps> = ({
       {/* Header */}
       <div className="px-6 py-4 border-b border-zinc-200/80 bg-zinc-50/70 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-soft-xs">
-            <Sparkles className="w-5 h-5" />
-          </div>
+          <StudentMascot variant="avatar" size="md" className="ring-2 ring-purple-300" />
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-zinc-950">Neighborly AI Assistant</h3>
-              <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/60 px-2 py-0.5 rounded-full">
+              <h3 className="text-base font-bold text-zinc-950">
+                Neighbor<span className="text-purple-600">Ly</span> AI Assistant
+              </h3>
+              <span className="text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200/60 px-2 py-0.5 rounded-full">
                 Gemini 3.8 Flash
               </span>
             </div>
             <p className="text-xs text-zinc-500 flex items-center gap-1.5 mt-0.5">
-              <MapPin className="w-3 h-3 text-blue-600" />
-              <span>Grounded in {currentLocation.neighborhood}, {currentLocation.city}</span>
+              <MapPin className="w-3 h-3 text-purple-600" />
+              <span>Learn · Earn · Grow together in {currentLocation.neighborhood}</span>
             </p>
           </div>
         </div>

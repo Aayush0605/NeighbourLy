@@ -14,6 +14,7 @@ import {
   X
 } from 'lucide-react';
 import { Order, Message, UserProfile } from '../types';
+import { NeighborLyLogo } from './NeighborLyLogo';
 
 interface ChatOrderModalProps {
   order: Order;
@@ -134,10 +135,10 @@ export const ChatOrderModal: React.FC<ChatOrderModalProps> = ({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-zinc-50/50">
           {/* Order Start Alert */}
           <div className="max-w-md mx-auto p-4 bg-white rounded-2xl border border-zinc-200/80 shadow-soft-xs text-center space-y-2">
-            <div className="w-9 h-9 rounded-2xl bg-zinc-100 text-zinc-800 flex items-center justify-center mx-auto">
-              <Lock className="w-4 h-4" />
+            <div className="flex items-center justify-center mx-auto">
+              <NeighborLyLogo size="sm" variant="icon" />
             </div>
-            <p className="text-xs font-bold text-zinc-950">Escrow Payment Locked (₹{order.amount})</p>
+            <p className="text-xs font-bold text-zinc-950">Neighborly Escrow Locked (₹{order.amount})</p>
             <p className="text-[11px] text-zinc-500 leading-relaxed">
               Funds are held safely by Neighborly until {order.buyerName} inspects the deliverable and confirms completion.
             </p>
