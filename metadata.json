@@ -1,0 +1,6 @@
+{
+  "name": "NeighborLy — Hyperlocal Skills & Task Marketplace",
+  "description": "Hyperlocal peer-to-peer neighborhood marketplace to find and offer local services, gigs, and tasks right from your current location.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
