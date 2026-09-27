@@ -5,17 +5,21 @@ import {
   Heart, 
   Clock, 
   Star, 
-  Flame, 
-  ShieldCheck, 
   RotateCcw, 
   SlidersHorizontal,
   Navigation,
   Target,
-  PlusCircle,
-  Briefcase
+  Plus,
+  Briefcase,
+  CheckCircle2,
+  X,
+  ChevronDown,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import { ServiceListing, ServiceCategory, LocationPoint } from '../types';
 import { calculateDistanceKm } from '../utils/location';
+import { NeighborLyLogo } from './NeighborLyLogo';
 
 interface BrowseServicesProps {
   services: ServiceListing[];
@@ -55,6 +59,7 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
   const [maxPrice, setMaxPrice] = useState<number>(3000);
   const [selectedTurnaround, setSelectedTurnaround] = useState<string>('any');
   const [sortBy, setSortBy] = useState<'distance' | 'price_asc' | 'rating'>('distance');
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const categoryPills = [
     { label: 'All', value: 'All' },
@@ -75,6 +80,16 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
     onChangeRadiusKm(10);
   };
 
+  // Count active filters (for badge)
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedCategory !== 'All') count++;
+    if (maxPrice < 3000) count++;
+    if (selectedTurnaround !== 'any') count++;
+    if (radiusKm !== 10) count++;
+    return count;
+  }, [selectedCategory, maxPrice, selectedTurnaround, radiusKm]);
+
   // Filter services and compute distance
   const filteredServices = useMemo(() => {
     return services
@@ -89,35 +104,37 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
           : 0;
         return {
           ...s,
-          distanceKm: dist,
+          distanceKm: Number(dist.toFixed(1)),
         };
       })
       .filter((service) => {
-        // Category filter
-        if (selectedCategory !== 'All' && service.category !== selectedCategory) {
-          return false;
-        }
-
-        // Search query
-        if (searchQuery.trim() !== '') {
-          const q = searchQuery.toLowerCase();
-          const matchesTitle = service.title.toLowerCase().includes(q);
-          const matchesCat = service.category.toLowerCase().includes(q);
-          const matchesDesc = service.description.toLowerCase().includes(q);
-          const matchesSkills = service.skills.some((sk) => sk.toLowerCase().includes(q));
-          if (!matchesTitle && !matchesCat && !matchesDesc && !matchesSkills) {
+        // Distance Filter
+        if (isWorkFromCurrentLocation && service.distanceKm !== undefined) {
+          if (service.distanceKm > radiusKm) {
             return false;
           }
         }
 
-        // Work from current location distance filter
-        if (isWorkFromCurrentLocation && (service.distanceKm || 0) > radiusKm) {
+        // Category Filter
+        if (selectedCategory !== 'All' && service.category !== selectedCategory) {
           return false;
         }
 
-        // Price filter
+        // Max Price
         if (service.price > maxPrice) {
           return false;
+        }
+
+        // Search Query
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const matchesTitle = service.title.toLowerCase().includes(q);
+          const matchesCat = service.category.toLowerCase().includes(q);
+          const matchesDesc = service.description.toLowerCase().includes(q);
+          const matchesSkills = service.skills.some((sk: string) => sk.toLowerCase().includes(q));
+          if (!matchesTitle && !matchesCat && !matchesDesc && !matchesSkills) {
+            return false;
+          }
         }
 
         // Turnaround
@@ -157,231 +174,289 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
     sortBy,
   ]);
 
+  // Shared Filter Content (Used for desktop sidebar & mobile drawer)
+  const renderFilterControls = () => (
+    <div className="space-y-6">
+      {/* Work from Current Location Toggle */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-zinc-950">Work from Location</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isWorkFromCurrentLocation}
+              onChange={(e) => onToggleWorkFromCurrentLocation(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-zinc-950"></div>
+          </label>
+        </div>
+        <p className="text-[11px] text-zinc-500 leading-relaxed">
+          {isWorkFromCurrentLocation
+            ? `Only show services within ${radiusKm}km of ${currentLocation.neighborhood || 'your area'}`
+            : 'Showing all services regardless of distance.'}
+        </p>
+      </div>
+
+      {/* Radius Slider */}
+      {isWorkFromCurrentLocation && (
+        <div className="space-y-3 pt-4 border-t border-zinc-100">
+          <div className="flex items-center justify-between text-xs">
+            <label className="font-bold text-zinc-950">Search Radius</label>
+            <span className="font-bold text-zinc-950 bg-zinc-100 px-2 py-0.5 rounded-md tabular-nums">
+              {radiusKm} km
+            </span>
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="30"
+            step="1"
+            value={radiusKm}
+            onChange={(e) => onChangeRadiusKm(Number(e.target.value))}
+            className="w-full accent-zinc-950 cursor-pointer"
+          />
+          <div className="flex justify-between text-[10px] text-zinc-400 font-medium">
+            <span>1 km</span>
+            <span>15 km</span>
+            <span>30 km</span>
+          </div>
+        </div>
+      )}
+
+      {/* Delivery / Turnaround Time */}
+      <div className="space-y-3 pt-4 border-t border-zinc-100">
+        <label className="text-xs font-bold text-zinc-950 block">Turnaround Speed</label>
+        <div className="space-y-2 text-xs">
+          {[
+            { label: 'Any Turnaround', value: 'any' },
+            { label: 'Same Day (Today)', value: 'today' },
+            { label: 'Within 24 Hours', value: '24h' },
+            { label: 'Under 3 Days', value: '3d' },
+          ].map((option) => (
+            <label key={option.value} className="flex items-center gap-2.5 text-zinc-700 hover:text-zinc-950 cursor-pointer font-medium">
+              <input
+                type="radio"
+                name="turnaround"
+                value={option.value}
+                checked={selectedTurnaround === option.value}
+                onChange={() => setSelectedTurnaround(option.value)}
+                className="accent-zinc-950 h-4 w-4"
+              />
+              <span>{option.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Price Range Slider */}
+      <div className="space-y-3 pt-4 border-t border-zinc-100">
+        <div className="flex items-center justify-between text-xs">
+          <label className="font-bold text-zinc-950">Max Budget</label>
+          <span className="font-bold text-zinc-950 bg-zinc-100 px-2 py-0.5 rounded-md tabular-nums">
+            ₹{maxPrice}
+          </span>
+        </div>
+        <input
+          type="range"
+          min="100"
+          max="3000"
+          step="50"
+          value={maxPrice}
+          onChange={(e) => setMaxPrice(Number(e.target.value))}
+          className="w-full accent-zinc-950 cursor-pointer"
+        />
+        <div className="flex justify-between text-[10px] text-zinc-400 font-medium">
+          <span>₹100</span>
+          <span>₹1,500</span>
+          <span>₹3,000</span>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 sm:space-y-10">
       
-      {/* Top Header */}
-      <div className="space-y-4">
+      {/* Top Header & Search Bar */}
+      <div className="space-y-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-heading font-black text-slate-900 tracking-tight">
-              Browse Neighborhood Services
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-extrabold text-zinc-950 tracking-tight">
+              Neighborhood Services
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Find skilled neighbors offering fixed-rate help near{' '}
-              <strong className="text-slate-800">{currentLocation.neighborhood}, {currentLocation.city}</strong>
+            <p className="text-xs sm:text-sm text-zinc-500 mt-1">
+              Available near <strong className="text-zinc-900 font-semibold">{currentLocation.neighborhood}, {currentLocation.city}</strong>
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto">
+          {/* Desktop Sort & Quick Actions */}
+          <div className="flex items-center gap-3">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none"
+              className="px-3.5 py-2.5 bg-white border border-zinc-200/90 rounded-2xl text-xs font-semibold text-zinc-700 focus:outline-none focus:border-zinc-950 cursor-pointer shadow-soft-xs"
             >
               <option value="distance">Sort: Nearest Distance</option>
               <option value="price_asc">Price: Low to High</option>
-              <option value="rating">Top Rated</option>
+              <option value="rating">Top Rated Providers</option>
             </select>
+
+            {/* Mobile Filter Button (opens bottom sheet) */}
+            <button
+              onClick={() => setIsMobileFilterOpen(true)}
+              className="md:hidden flex items-center gap-2 px-3.5 py-2.5 bg-white border border-zinc-200/90 rounded-2xl text-xs font-semibold text-zinc-800 shadow-soft-xs cursor-pointer"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Filters</span>
+              {activeFiltersCount > 0 && (
+                <span className="w-5 h-5 rounded-full bg-zinc-950 text-white text-[10px] flex items-center justify-center font-bold">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Integrated Search & Location Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center bg-white rounded-2xl border border-slate-200 shadow-xs p-1.5 gap-2">
+        {/* Integrated Search & Location Bar with larger radii */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center bg-white rounded-2xl sm:rounded-3xl border border-zinc-200/90 shadow-soft p-1.5 sm:p-2 gap-2">
           <div className="flex items-center flex-1 px-3 py-1">
-            <Search className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
+            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-400 mr-2.5 shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search services (e.g. Wi-Fi repair, PPT, painting, tutoring, dog walking)..."
-              className="w-full text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 bg-transparent focus:outline-none"
+              placeholder="Search services (e.g. Wi-Fi setup, plumbing, tutor, pet care)..."
+              className="w-full text-xs sm:text-sm text-zinc-900 placeholder:text-zinc-400 bg-transparent focus:outline-none min-h-[38px]"
             />
           </div>
 
-          <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
+          <div className="h-6 w-px bg-zinc-200 hidden sm:block"></div>
 
           {/* Location Trigger */}
           <button
             onClick={onOpenLocationPicker}
-            className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 transition-colors shrink-0 cursor-pointer"
+            className="flex items-center justify-between gap-2 px-3.5 py-2 bg-zinc-50 hover:bg-zinc-100/80 rounded-xl sm:rounded-2xl text-xs font-semibold text-zinc-700 transition-all shrink-0 cursor-pointer border border-zinc-200/70"
           >
-            <div className="flex items-center gap-1.5 text-left">
-              <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span className="max-w-[160px] truncate">{currentLocation.neighborhood}</span>
-              <span className="text-[10px] text-emerald-700 bg-emerald-100 font-bold px-1.5 py-0.2 rounded-full">
+            <div className="flex items-center gap-2 text-left">
+              <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span className="max-w-[130px] sm:max-w-[160px] truncate">{currentLocation.neighborhood}</span>
+              <span className="text-[10px] text-zinc-600 bg-zinc-200/80 font-bold px-1.5 py-0.5 rounded-md">
                 {radiusKm}km
               </span>
             </div>
           </button>
         </div>
 
-        {/* Category Filter Pills */}
+        {/* Category Filter Tabs (Horizontal scroll with larger pill radius) */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {categoryPills.map((pill) => {
-            const isActive = selectedCategory === pill.value;
-            return (
-              <button
-                key={pill.value}
-                onClick={() => onCategoryChange(pill.value)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                {pill.label}
-              </button>
-            );
-          })}
+          {categoryPills.map((cat) => (
+            <button
+              key={cat.value}
+              onClick={() => onCategoryChange(cat.value)}
+              className={`px-4 py-2 rounded-xl sm:rounded-2xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                selectedCategory === cat.value
+                  ? 'bg-zinc-950 text-white shadow-soft'
+                  : 'bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200/70 shadow-2xs'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Main Grid & Left Filter Rail */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+      {/* Main Grid: Sidebar Filters (Desktop) + Services List */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         
-        {/* Left Filter Rail */}
-        <aside className="md:col-span-4 lg:col-span-3 space-y-6">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-6">
-            
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h2 className="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider">
-                <SlidersHorizontal className="w-4 h-4 text-emerald-600" />
-                <span>Filters</span>
-              </h2>
+        {/* Left Filter Sidebar (Desktop only) */}
+        <aside className="hidden md:block md:col-span-4 lg:col-span-3 space-y-6 sticky top-24">
+          <div className="bg-white rounded-3xl p-6 border border-zinc-200/80 shadow-soft space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-zinc-700" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-950">Filters</h3>
+              </div>
               <button
                 onClick={handleResetFilters}
-                className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-zinc-500 hover:text-zinc-950 flex items-center gap-1 cursor-pointer transition-colors"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Reset</span>
               </button>
             </div>
 
-            {/* Work from Current Location toggle */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                  <Target className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Work from Location</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => onToggleWorkFromCurrentLocation(!isWorkFromCurrentLocation)}
-                  className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${
-                    isWorkFromCurrentLocation ? 'bg-emerald-600' : 'bg-slate-200'
-                  }`}
-                >
-                  <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      isWorkFromCurrentLocation ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-              </div>
-              <p className="text-[11px] text-slate-500 leading-tight">
-                Filters services within your designated travel radius ({radiusKm} km).
-              </p>
-            </div>
-
-            {/* Travel Radius Selector */}
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <div className="flex items-center justify-between text-xs">
-                <label className="font-bold text-slate-800">Max Distance</label>
-                <span className="font-bold text-emerald-700">{radiusKm} km</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1">
-                {[2, 5, 10, 25].map((km) => (
-                  <button
-                    key={km}
-                    type="button"
-                    onClick={() => onChangeRadiusKm(km)}
-                    className={`py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                      radiusKm === km
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    {km}km
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Turnaround Filter */}
-            <div className="space-y-2.5 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-800">Turnaround Speed</label>
-              <div className="space-y-1.5 text-xs text-slate-600">
-                {[
-                  { id: 'any', label: 'Any Time' },
-                  { id: 'today', label: 'Same Day (Hours)' },
-                  { id: '24h', label: 'Within 24 Hours' },
-                  { id: '3d', label: 'Within 3 Days' },
-                ].map((option) => (
-                  <label key={option.id} className="flex items-center gap-2 cursor-pointer hover:text-slate-900">
-                    <input
-                      type="radio"
-                      name="turnaround"
-                      checked={selectedTurnaround === option.id}
-                      onChange={() => setSelectedTurnaround(option.id)}
-                      className="text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5"
-                    />
-                    <span>{option.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Price Range Slider */}
-            <div className="space-y-3 pt-2 border-t border-slate-100">
-              <div className="flex items-center justify-between text-xs">
-                <label className="font-bold text-slate-800">Max Price</label>
-                <span className="font-bold text-slate-900 tabular-nums">₹{maxPrice}</span>
-              </div>
-              <input
-                type="range"
-                min="100"
-                max="3000"
-                step="50"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="w-full accent-emerald-600 cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-slate-400">
-                <span>₹100</span>
-                <span>₹1,500</span>
-                <span>₹3,000</span>
-              </div>
-            </div>
-
+            {renderFilterControls()}
           </div>
         </aside>
 
+        {/* Mobile Filter Drawer / Bottom Sheet */}
+        {isMobileFilterOpen && (
+          <div className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs flex flex-col justify-end md:hidden animate-in fade-in duration-200">
+            <div 
+              className="bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto p-6 space-y-6 shadow-soft-xl animate-in slide-in-from-bottom duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4 text-zinc-900" />
+                  <h3 className="text-base font-bold text-zinc-950">Filters & Distance</h3>
+                </div>
+                <button
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="p-1 rounded-full text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {renderFilterControls()}
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="flex-1 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-2xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Reset All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="flex-1 py-3 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl text-xs font-bold shadow-soft transition-colors cursor-pointer"
+                >
+                  Apply Filters ({filteredServices.length})
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Right Content Column */}
-        <main className="md:col-span-8 lg:col-span-9 space-y-4">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
+        <main className="col-span-1 md:col-span-8 lg:col-span-9 space-y-6">
+          <div className="flex items-center justify-between text-xs text-zinc-500 font-medium px-1">
             <span>
-              Showing <strong className="text-slate-900">{filteredServices.length}</strong> services nearby
+              Showing <strong className="text-zinc-950 font-bold">{filteredServices.length}</strong> local services
             </span>
             {isWorkFromCurrentLocation && (
-              <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                Filtered within {radiusKm}km of {currentLocation.neighborhood}
+              <span className="text-zinc-700 bg-zinc-100/90 font-semibold px-2.5 py-1 rounded-lg text-[11px] border border-zinc-200/60">
+                Within {radiusKm}km of {currentLocation.neighborhood}
               </span>
             )}
           </div>
 
-          {/* Clean Empty State when no dummy data exists */}
+          {/* Clean Empty State */}
           {filteredServices.length === 0 ? (
-            <div className="bg-white rounded-3xl p-10 sm:p-14 text-center border border-slate-200 space-y-4 shadow-2xs">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
-                <MapPin className="w-8 h-8" />
+            <div className="bg-white rounded-3xl p-10 sm:p-16 text-center border border-zinc-200/80 space-y-5 shadow-soft">
+              <div className="flex items-center justify-center">
+                <NeighborLyLogo size="xl" variant="icon" />
               </div>
               
-              <div className="space-y-1">
-                <h3 className="text-lg sm:text-xl font-heading font-black text-slate-900">
-                  No services listed in this area yet
+              <div className="space-y-1.5">
+                <h3 className="text-lg sm:text-xl font-heading font-extrabold text-zinc-950">
+                  No services listed in this radius yet
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+                <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto leading-relaxed">
                   Be the first neighbor in <strong>{currentLocation.neighborhood}</strong> to offer a skill, or post a request for what you need done.
                 </p>
               </div>
@@ -390,33 +465,34 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                 <button
                   type="button"
                   onClick={onOpenPostService}
-                  className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-3 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl text-xs sm:text-sm font-semibold shadow-soft hover:shadow-soft-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Briefcase className="w-4 h-4" />
-                  <span>Offer the First Skill in Your Area</span>
+                  <span>Offer a Skill in Your Area</span>
                 </button>
                 <button
                   type="button"
                   onClick={onOpenPostRequest}
-                  className="w-full sm:w-auto px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-3 bg-white hover:bg-zinc-50 text-zinc-800 border border-zinc-200 rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
                 >
-                  <PlusCircle className="w-4 h-4 text-emerald-600" />
-                  <span>Post a Task You Need Done</span>
+                  <Plus className="w-4 h-4" />
+                  <span>Post a Task Request</span>
                 </button>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            /* Responsive Grid with larger border radii & subtle depth */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
               {filteredServices.map((service) => (
                 <div
                   key={service.id}
                   onClick={() => onSelectService(service)}
-                  className="group bg-white rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-2xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col cursor-pointer"
+                  className="group bg-white rounded-2xl sm:rounded-3xl border border-zinc-200/80 hover:border-zinc-300 shadow-soft hover:shadow-soft-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col cursor-pointer"
                 >
-                  {/* Card Cover */}
-                  <div className={`h-40 bg-gradient-to-br ${service.coverGradient} p-4 text-white flex flex-col justify-between relative`}>
-                    <div className="flex items-center justify-between relative z-10">
-                      <span className="text-[10px] font-bold uppercase bg-black/40 backdrop-blur-md px-2 py-0.5 rounded">
+                  {/* Card Cover (Clean minimal card header with subtle gradient) */}
+                  <div className="h-36 bg-gradient-to-br from-zinc-100 via-zinc-50 to-zinc-100 p-4 flex flex-col justify-between border-b border-zinc-100 relative">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-zinc-700 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-lg shadow-2xs border border-zinc-200/50">
                         {service.category}
                       </span>
                       <button
@@ -425,57 +501,75 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                           e.stopPropagation();
                           onToggleSaveService(service.id);
                         }}
-                        className={`w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-md transition-colors ${
-                          service.saved ? 'bg-rose-500 text-white' : 'bg-black/30 hover:bg-black/50 text-white'
+                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                          service.saved 
+                            ? 'bg-rose-500 text-white shadow-soft' 
+                            : 'bg-white/90 hover:bg-white text-zinc-400 hover:text-zinc-700 shadow-soft-xs'
                         }`}
+                        title={service.saved ? 'Remove from saved' : 'Save service'}
                       >
-                        <Heart className={`w-3.5 h-3.5 ${service.saved ? 'fill-current' : ''}`} />
+                        <Heart className={`w-4 h-4 ${service.saved ? 'fill-current' : ''}`} />
                       </button>
                     </div>
 
-                    <div className="relative z-10">
-                      <p className="text-xs font-black tracking-tight line-clamp-1">{service.title}</p>
-                      <p className="text-[11px] text-white/80 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3 h-3 text-emerald-400" />
-                        <span>{service.distanceKm} km away · {service.location?.neighborhood}</span>
+                    <div>
+                      <p className="text-sm font-bold text-zinc-950 group-hover:text-blue-600 transition-colors line-clamp-1">
+                        {service.title}
+                      </p>
+                      <p className="text-[11px] text-zinc-500 flex items-center gap-1 mt-1">
+                        <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span className="font-semibold text-zinc-700">{service.distanceKm} km</span>
+                        <span>· {service.location?.neighborhood}</span>
                       </p>
                     </div>
                   </div>
 
                   {/* Card Body */}
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-1">
-                        {service.title}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                        {service.description}
-                      </p>
+                  <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-4">
+                    <p className="text-xs text-zinc-600 line-clamp-2 leading-relaxed font-normal">
+                      {service.description}
+                    </p>
+
+                    {/* Tags row */}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {service.skills.slice(0, 2).map((skill: string) => (
+                        <span key={skill} className="text-[10px] font-medium text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded-md">
+                          {skill}
+                        </span>
+                      ))}
+                      {service.deliveryDays === 0 && (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          <Zap className="w-2.5 h-2.5" />
+                          <span>Same Day</span>
+                        </span>
+                      )}
                     </div>
 
-                    {/* Footer Info */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    {/* Provider info & pricing (Fiverr / Freelancer style) */}
+                    <div className="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
                         <img
-                          src={service.provider.avatar}
-                          alt={service.provider.name}
-                          className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
+                          src={service.provider?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                          alt={service.provider?.name || 'Provider'}
+                          referrerPolicy="no-referrer"
+                          className="w-7 h-7 rounded-full object-cover ring-1 ring-zinc-200"
                         />
-                        <div className="text-left">
-                          <p className="text-xs font-bold text-slate-800 truncate max-w-[100px]">
-                            {service.provider.name}
-                          </p>
-                          <span className="text-[10px] text-emerald-600 font-semibold">
-                            ★ {service.rating.toFixed(1)}
+                        <div className="flex flex-col">
+                          <span className="font-bold text-zinc-900 text-xs truncate max-w-[95px]">
+                            {service.provider?.name?.split(' ')[0] || 'Neighbor'}
+                          </span>
+                          <span className="text-[10px] text-zinc-400 flex items-center gap-0.5">
+                            <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                            <span className="font-semibold text-zinc-700">{service.rating.toFixed(1)}</span>
                           </span>
                         </div>
                       </div>
 
                       <div className="text-right">
-                        <p className="text-sm font-extrabold text-slate-900 tabular-nums">
+                        <span className="text-[10px] text-zinc-400 block font-medium">Starting at</span>
+                        <span className="text-base font-extrabold font-heading text-zinc-950 tabular-nums">
                           ₹{service.price}
-                        </p>
-                        <span className="text-[10px] text-slate-400 block">Fixed Rate</span>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -483,10 +577,9 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
               ))}
             </div>
           )}
-
         </main>
-      </div>
 
+      </div>
     </div>
   );
 };

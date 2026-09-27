@@ -5,7 +5,6 @@ import {
   Navigation, 
   Search, 
   Check, 
-  Compass, 
   Sliders, 
   Building,
   Target
@@ -76,163 +75,121 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200">
-      <div className="relative bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-auto flex flex-col max-h-[88vh]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-150">
+      <div 
+        className="relative bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full shadow-soft-xl border border-zinc-200/90 overflow-hidden my-0 sm:my-auto flex flex-col max-h-[90vh] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-              <MapPin className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-heading font-black text-slate-900">Your Work & Task Location</h2>
-              <p className="text-[11px] text-slate-500">Discover or offer local services near you</p>
-            </div>
+        <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/60">
+          <div>
+            <h2 className="text-base sm:text-lg font-heading font-extrabold text-zinc-950">
+              Set Your Neighborhood
+            </h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Neighborly uses your location to discover skills within walking or driving distance.
+            </p>
           </div>
-          <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+        {/* Modal Body */}
+        <div className="p-6 sm:p-7 space-y-6 overflow-y-auto">
           
-          {/* Work From My Current Location Banner & GPS Detection Button */}
-          <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 space-y-3">
+          {/* Action 1: Instant GPS Detection */}
+          <button
+            onClick={handleDetectGPS}
+            disabled={isDetecting}
+            className="w-full py-3.5 px-4 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-50 text-white rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-soft hover:shadow-soft-md flex items-center justify-center gap-2.5 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
+          >
+            <Navigation className={`w-4 h-4 ${isDetecting ? 'animate-spin' : ''}`} />
+            <span>{isDetecting ? 'Detecting GPS Coordinates...' : 'Detect My Current GPS Location'}</span>
+          </button>
+
+          {/* Action 2: Radius Slider */}
+          <div className="bg-zinc-50/80 rounded-2xl p-5 border border-zinc-200/80 shadow-2xs space-y-3">
             <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-                  <Target className="w-4 h-4 text-emerald-600" />
-                  <span>Work from My Current Location</span>
-                </span>
-                <p className="text-[11px] text-emerald-800">
-                  Filter gigs and requests automatically within your travel radius
-                </p>
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-blue-600" />
+                <span className="text-xs font-bold text-zinc-950">Active Radius</span>
               </div>
-
-              {/* Toggle switch */}
-              <button
-                type="button"
-                onClick={() => onToggleWorkFromCurrentLocation(!isWorkFromCurrentLocation)}
-                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 cursor-pointer ${
-                  isWorkFromCurrentLocation ? 'bg-emerald-600' : 'bg-slate-300'
-                }`}
-              >
-                <div
-                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                    isWorkFromCurrentLocation ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
+              <span className="text-xs font-extrabold text-zinc-950 bg-white px-2.5 py-1 rounded-lg border border-zinc-200 tabular-nums">
+                {radiusKm} km
+              </span>
             </div>
-
-            {/* GPS Trigger Button */}
-            <button
-              type="button"
-              onClick={handleDetectGPS}
-              disabled={isDetecting}
-              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Navigation className={`w-3.5 h-3.5 ${isDetecting ? 'animate-spin' : ''}`} />
-              <span>{isDetecting ? 'Detecting GPS Coordinates...' : 'Use My Exact Current Location (GPS)'}</span>
-            </button>
-          </div>
-
-          {/* Travel Radius Selector */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <label className="font-bold text-slate-800 flex items-center gap-1">
-                <Sliders className="w-3.5 h-3.5 text-slate-500" />
-                <span>Travel / Service Radius</span>
-              </label>
-              <span className="font-bold text-emerald-700 font-mono">Within {radiusKm} km</span>
-            </div>
-
-            <div className="grid grid-cols-5 gap-1.5">
-              {[1, 2, 5, 10, 25].map((km) => (
-                <button
-                  key={km}
-                  type="button"
-                  onClick={() => onChangeRadiusKm(km)}
-                  className={`py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                    radiusKm === km
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  {km} km
-                </button>
-              ))}
+            <input
+              type="range"
+              min="1"
+              max="25"
+              step="1"
+              value={radiusKm}
+              onChange={(e) => onChangeRadiusKm(Number(e.target.value))}
+              className="w-full accent-zinc-950 cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-zinc-400 font-medium">
+              <span>1 km (walking)</span>
+              <span>10 km (neighborhood)</span>
+              <span>25 km (city-wide)</span>
             </div>
           </div>
 
-          {/* Search or Enter Custom Neighborhood */}
-          <div className="space-y-3 pt-2 border-t border-slate-100">
-            <label className="text-xs font-bold text-slate-800">Or Select a Neighborhood / Area</label>
-            
-            <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-              <Search className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search neighborhood or city (e.g. Indiranagar, Saket)"
-                className="w-full text-xs sm:text-sm text-slate-900 bg-transparent focus:outline-none"
-              />
-            </div>
-
-            {/* Popular Neighborhoods List */}
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-              {filteredPreset.map((loc, idx) => {
-                const isSelected =
-                  loc.neighborhood.toLowerCase() === currentLocation.neighborhood.toLowerCase() &&
-                  loc.city.toLowerCase() === currentLocation.city.toLowerCase();
-
+          {/* Action 3: Popular Neighborhood Presets */}
+          <div className="space-y-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-zinc-950 block">
+              Quick Pick Neighborhood
+            </span>
+            <div className="grid grid-cols-2 gap-2.5">
+              {filteredPreset.slice(0, 6).map((loc) => {
+                const isSelected = currentLocation.neighborhood === loc.neighborhood;
                 return (
                   <button
-                    key={idx}
-                    type="button"
+                    key={loc.neighborhood}
                     onClick={() => {
                       onSelectLocation(loc);
+                      onToggleWorkFromCurrentLocation(true);
                       onClose();
                     }}
-                    className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer ${
+                    className={`p-3 text-left rounded-2xl border transition-all text-xs flex flex-col justify-between cursor-pointer ${
                       isSelected
-                        ? 'bg-emerald-50 text-emerald-950 border-emerald-300 font-bold'
-                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
+                        ? 'border-zinc-950 bg-zinc-950 text-white shadow-soft'
+                        : 'border-zinc-200/80 bg-white hover:bg-zinc-50 text-zinc-800 shadow-2xs'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <MapPin className={`w-3.5 h-3.5 ${isSelected ? 'text-emerald-600' : 'text-slate-400'}`} />
-                      <div>
-                        <p className="text-xs font-bold">{loc.neighborhood}</p>
-                        <p className="text-[10px] text-slate-400">{loc.city}, {loc.state}</p>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold line-clamp-1">{loc.neighborhood}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
                     </div>
-
-                    {isSelected && <Check className="w-4 h-4 text-emerald-600 shrink-0" />}
+                    <span className={`text-[10px] mt-0.5 ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                      {loc.city}
+                    </span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Custom Address Input */}
-          <form onSubmit={handleApplyCustom} className="pt-2 border-t border-slate-100 space-y-2">
-            <label className="text-[11px] font-semibold text-slate-600">Enter custom street / landmark</label>
+          {/* Action 4: Custom Address Form */}
+          <form onSubmit={handleApplyCustom} className="space-y-3 pt-4 border-t border-zinc-100">
+            <label className="text-xs font-bold text-zinc-950 block">Or Type Custom Area</label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={customAddress}
                 onChange={(e) => setCustomAddress(e.target.value)}
-                placeholder="e.g. 14th Cross, HSR Layout, Bengaluru"
-                className="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                placeholder="e.g. Sector 62, Noida or Whitefield, Bangalore"
+                className="flex-1 px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-950 focus:bg-white"
               />
               <button
                 type="submit"
-                className="px-3 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 cursor-pointer"
+                className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-2xl text-xs font-bold transition-colors cursor-pointer"
               >
-                Apply
+                Set
               </button>
             </div>
           </form>

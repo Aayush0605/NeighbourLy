@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { 
   X, 
-  Sparkles, 
   MapPin, 
   Clock, 
   ShieldCheck, 
-  Zap, 
   DollarSign, 
-  Tag
+  Tag,
+  Briefcase
 } from 'lucide-react';
 import { ServiceCategory, LocationPoint, ServiceListing, UserProfile } from '../types';
 
@@ -62,16 +61,6 @@ export const PostServiceModal: React.FC<PostServiceModalProps> = ({
       .map((s) => s.trim())
       .filter(Boolean);
 
-    // Pick random gradient
-    const gradients = [
-      'from-emerald-900 via-teal-900 to-slate-950',
-      'from-indigo-900 via-purple-900 to-slate-950',
-      'from-blue-900 via-cyan-900 to-slate-950',
-      'from-amber-900 via-orange-950 to-stone-950',
-      'from-rose-950 via-slate-900 to-stone-900',
-    ];
-    const coverGradient = gradients[Math.floor(Math.random() * gradients.length)];
-
     onSubmit({
       title: title.trim(),
       description: description.trim(),
@@ -83,153 +72,152 @@ export const PostServiceModal: React.FC<PostServiceModalProps> = ({
       deliveryHours: deliveryDays * 24,
       revisions,
       isUrgent,
-      coverGradient,
+      coverGradient: 'from-zinc-800 to-zinc-950',
       skills: skills.length > 0 ? skills : [category],
       location: currentLocation,
-      trsScore: 92,
+      trsScore: 95,
     });
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200">
-      <div className="relative bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden my-auto flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-150">
+      <div 
+        className="relative bg-white rounded-t-3xl sm:rounded-3xl max-w-xl w-full shadow-soft-xl border border-zinc-200/90 overflow-hidden my-0 sm:my-auto flex flex-col max-h-[92vh] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/60 shrink-0">
           <div>
-            <h2 className="text-base sm:text-lg font-heading font-black text-slate-900">Offer a Skill in Your Neighborhood</h2>
-            <p className="text-xs text-slate-500">List what you can help with. Neighbors can book your fixed-price service.</p>
+            <h2 className="text-base sm:text-lg font-heading font-extrabold text-zinc-950">
+              Offer a Skill in Your Neighborhood
+            </h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              List what you can help with. Neighbors can book your fixed-price service.
+            </p>
           </div>
-          <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer">
+          <button 
+            onClick={onClose} 
+            className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 cursor-pointer"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-6 sm:p-7 space-y-5 overflow-y-auto">
           
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-800">
-              Service Title <span className="text-rose-500">*</span>
-            </label>
+          {/* Location Context Banner */}
+          <div className="flex items-center gap-2 p-3 bg-zinc-50 rounded-2xl border border-zinc-200/80 text-xs text-zinc-700">
+            <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>Listing in <strong>{currentLocation.neighborhood}, {currentLocation.city}</strong></span>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-900">Service Title</label>
             <input
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Wi-Fi Router Setup & PC Cleanup, or Professional PPT Design"
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              placeholder="e.g. Home Wi-Fi & Printer Setup, Furniture Assembly, Math Tutoring"
+              className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white shadow-2xs"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-800">
-              Description <span className="text-rose-500">*</span>
-            </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-zinc-900">Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as ServiceCategory)}
+                className="w-full px-3.5 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white cursor-pointer shadow-2xs"
+              >
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-zinc-900">Base Price (₹ INR)</label>
+              <input
+                type="number"
+                min="50"
+                step="50"
+                required
+                value={price}
+                onChange={(e) => setPrice(Number(e.target.value))}
+                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white shadow-2xs tabular-nums"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-900">Description & What's Included</label>
             <textarea
               required
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what you will do, your experience, and what the neighbor should provide..."
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              placeholder="Describe what you will do, your experience or tools, and what the neighbor needs to provide..."
+              className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white shadow-2xs"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-800">Category</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-zinc-900">Turnaround Time</label>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as ServiceCategory)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800"
+                value={deliveryDays}
+                onChange={(e) => setDeliveryDays(Number(e.target.value))}
+                className="w-full px-3.5 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white cursor-pointer shadow-2xs"
               >
-                {categories.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
+                <option value={0}>Same Day (Within hours)</option>
+                <option value={1}>1 Day (Next day)</option>
+                <option value={2}>2 Days</option>
+                <option value={3}>3 Days</option>
+                <option value={7}>1 Week</option>
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-800">Base Price (₹)</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-zinc-900">Rush Delivery Add-on (+₹)</label>
               <input
                 type="number"
-                min="50"
+                min="0"
                 step="50"
-                value={price}
-                onChange={(e) => setPrice(Number(e.target.value))}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-800">Turnaround (Days)</label>
-              <input
-                type="number"
-                min="0"
-                max="14"
-                value={deliveryDays}
-                onChange={(e) => setDeliveryDays(Number(e.target.value))}
-                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-800">Rush Option (+₹)</label>
-              <input
-                type="number"
-                min="0"
-                step="25"
                 value={rushPrice}
                 onChange={(e) => setRushPrice(Number(e.target.value))}
-                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-800">Revisions</label>
-              <input
-                type="number"
-                min="0"
-                max="5"
-                value={revisions}
-                onChange={(e) => setRevisions(Number(e.target.value))}
-                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                placeholder="Optional extra fee for urgent delivery"
+                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white shadow-2xs tabular-nums"
               />
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-800">Skills / Tags (comma-separated)</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-900">Keywords & Skills (comma separated)</label>
             <input
               type="text"
               value={skillsInput}
               onChange={(e) => setSkillsInput(e.target.value)}
-              placeholder="e.g. Wi-Fi, Hardware, Windows, macOS"
-              className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+              placeholder="e.g. Wi-Fi, Router, Hardware, On-Site"
+              className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white shadow-2xs"
             />
           </div>
 
-          <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between text-xs text-emerald-950">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>
-                Offering from: <strong>{currentLocation.neighborhood}, {currentLocation.city}</strong>
-              </span>
-            </div>
-            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-              Local Service
-            </span>
+          <div className="pt-2">
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-soft hover:shadow-soft-md cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
+            >
+              Publish Local Skill Listing
+            </button>
           </div>
 
-          <button
-            type="submit"
-            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-200 transition-all cursor-pointer"
-          >
-            Publish Service to Neighborhood
-          </button>
         </form>
 
       </div>

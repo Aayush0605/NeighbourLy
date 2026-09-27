@@ -5,11 +5,11 @@ import {
   Wallet, 
   CheckCircle2, 
   Clock, 
-  PlusCircle, 
+  Plus, 
   ArrowUpRight, 
   MapPin, 
-  ShieldCheck,
-  Trash2
+  ShieldCheck, 
+  Trash2 
 } from 'lucide-react';
 import { Order, ServiceListing, TaskRequest, UserProfile } from '../types';
 
@@ -59,270 +59,324 @@ export const MyTasksOrdersView: React.FC<MyTasksOrdersViewProps> = ({
     .reduce((sum, o) => sum + o.amount, 0);
 
   const handleWithdraw = () => {
+    if (completedEarnings <= 0) return;
     setIsWithdrawing(true);
     setTimeout(() => {
       setIsWithdrawing(false);
-      alert(`₹${completedEarnings} sent directly to ${upiId} via Instant UPI!`);
-    }, 1200);
+      alert(`Withdrawal of ₹${completedEarnings} processed to ${upiId}`);
+    }, 1000);
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
       
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-black text-slate-900 tracking-tight">
-            My Tasks & Neighborhood Hub
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Manage your booked tasks, services offered, and escrow payments
-          </p>
+      {/* Header Profile Summary with generous radius and soft depth */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/80 shadow-soft flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4 sm:gap-5">
+          <img
+            src={currentUser.avatar}
+            alt={currentUser.name}
+            className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover ring-2 ring-zinc-200 shadow-soft-xs"
+          />
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-heading font-extrabold text-zinc-950">{currentUser.name}</h1>
+              <span className="text-[11px] text-zinc-500 bg-zinc-100 font-mono px-2 py-0.5 rounded-lg border border-zinc-200/60">
+                @{currentUser.userId}
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-zinc-500 flex items-center gap-2">
+              <MapPin className="w-3.5 h-3.5 text-blue-600" />
+              <span>{currentUser.location?.neighborhood || 'Current Neighborhood'}, {currentUser.location?.city}</span>
+              <span className="text-zinc-300">·</span>
+              <span>Joined {currentUser.joinedDate}</span>
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Action buttons */}
+        <div className="flex items-center gap-3">
           <button
             onClick={onOpenPostService}
-            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            className="px-4 py-2.5 text-xs font-semibold text-zinc-800 bg-white hover:bg-zinc-50 rounded-2xl border border-zinc-200/90 shadow-2xs hover:shadow-soft-xs transition-all flex items-center gap-2 cursor-pointer"
           >
-            <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
-            <span>+ Offer a Skill</span>
+            <Briefcase className="w-3.5 h-3.5 text-zinc-500" />
+            <span>Offer a Skill</span>
           </button>
           <button
             onClick={onOpenPostRequest}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2.5 text-xs font-semibold text-white bg-zinc-950 hover:bg-zinc-800 rounded-2xl shadow-soft hover:shadow-soft-md transition-all flex items-center gap-2 cursor-pointer"
           >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>+ Post a Task</span>
+            <Plus className="w-4 h-4" />
+            <span>Post a Task</span>
           </button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
+      {/* Segmented Navigation Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-zinc-200/70 no-scrollbar">
         {[
-          { id: 'orders', label: `Active Orders (${myOrders.length})` },
-          { id: 'my_services', label: `My Offered Skills (${myServices.length})` },
-          { id: 'my_requests', label: `My Task Requests (${myRequests.length})` },
-          { id: 'wallet', label: 'Escrow Wallet & Payout' },
+          { id: 'orders', label: 'Active Tasks & Orders', count: myOrders.length },
+          { id: 'my_services', label: 'My Offered Skills', count: myServices.length },
+          { id: 'my_requests', label: 'My Task Requests', count: myRequests.length },
+          { id: 'wallet', label: 'Escrow Wallet & Payouts', count: `₹${completedEarnings}` },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+            className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === tab.id
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                ? 'bg-zinc-950 text-white shadow-soft'
+                : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100/80'
             }`}
           >
-            {tab.label}
+            <span>{tab.label}</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold tabular-nums ${
+                activeTab === tab.id ? 'bg-zinc-800 text-zinc-100' : 'bg-zinc-100 text-zinc-600'
+              }`}
+            >
+              {tab.count}
+            </span>
           </button>
         ))}
       </div>
 
-      {/* Tab Content */}
-      <div className="pt-2">
-        
-        {/* Tab 1: Orders */}
-        {activeTab === 'orders' && (
-          <div className="space-y-4">
-            {myOrders.length === 0 ? (
-              <div className="bg-white rounded-3xl p-10 text-center border border-slate-200 space-y-3">
-                <Clock className="w-10 h-10 text-slate-400 mx-auto" />
-                <h3 className="text-base font-bold text-slate-900">No active orders right now</h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Browse neighborhood services or post a request to connect with local neighbors.
-                </p>
-                <div className="pt-2">
-                  <button
-                    onClick={onOpenPostRequest}
-                    className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 cursor-pointer"
-                  >
-                    Post a Task You Need Done
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {myOrders.map((ord) => (
+      {/* Tab 1: Orders (Buying or Selling) */}
+      {activeTab === 'orders' && (
+        <div className="space-y-4">
+          {myOrders.length === 0 ? (
+            <div className="bg-white rounded-3xl p-12 text-center border border-zinc-200/80 shadow-soft space-y-3">
+              <Clock className="w-8 h-8 text-zinc-400 mx-auto" />
+              <h3 className="text-base font-bold text-zinc-950">No active tasks or orders yet</h3>
+              <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+                Explore services in your neighborhood or post a task to connect with skilled neighbors.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {myOrders.map((order) => {
+                const isBuyer = order.buyerId === currentUser.id;
+                const otherPartyName = isBuyer ? order.sellerName : order.buyerName;
+                const otherPartyAvatar = isBuyer ? order.sellerAvatar : order.buyerAvatar;
+
+                return (
                   <div
-                    key={ord.id}
-                    className="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200 hover:border-emerald-300 shadow-2xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    key={order.id}
+                    onClick={() => onOpenOrderChat(order.id)}
+                    className="bg-white rounded-3xl p-6 border border-zinc-200/80 hover:border-zinc-300 shadow-soft hover:shadow-soft-md transition-all cursor-pointer flex flex-col justify-between space-y-4 group"
                   >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={ord.buyerId === currentUser.id ? ord.sellerAvatar : ord.buyerAvatar}
-                        alt="User"
-                        className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-100"
-                      />
+                    <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h4 className="text-sm font-bold text-slate-900">{ord.serviceTitle}</h4>
-                        <p className="text-xs text-slate-500">
-                          {ord.buyerId === currentUser.id
-                            ? `Provider: ${ord.sellerName}`
-                            : `Requester: ${ord.buyerName}`}{' '}
-                          · Deadline: {ord.deadline}
-                        </p>
-                        <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-1">
-                          Status: {ord.status}
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">
+                          {isBuyer ? 'Hired Neighbor' : 'Client Neighbor'}
                         </span>
+                        <h3 className="text-base font-bold text-zinc-950 group-hover:text-blue-600 transition-colors mt-0.5">
+                          {order.serviceTitle}
+                        </h3>
                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
-                      <div className="text-right">
-                        <span className="text-base font-black text-slate-900">₹{ord.amount}</span>
-                        <span className="text-[10px] text-emerald-700 block font-medium">Escrow Protected</span>
-                      </div>
-                      <button
-                        onClick={() => onOpenOrderChat(ord.id)}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>Open Thread</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab 2: My Offered Skills */}
-        {activeTab === 'my_services' && (
-          <div className="space-y-4">
-            {myServices.length === 0 ? (
-              <div className="bg-white rounded-3xl p-10 text-center border border-slate-200 space-y-3">
-                <Briefcase className="w-10 h-10 text-slate-400 mx-auto" />
-                <h3 className="text-base font-bold text-slate-900">You haven't listed any skills yet</h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Offer a skill in your neighborhood (e.g. computer repair, tutoring, handy work, design).
-                </p>
-                <div className="pt-2">
-                  <button
-                    onClick={onOpenPostService}
-                    className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 cursor-pointer"
-                  >
-                    + Offer Your First Skill
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {myServices.map((svc) => (
-                  <div key={svc.id} className="p-4 bg-white rounded-2xl border border-slate-200 space-y-3 shadow-2xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">
-                        {svc.category}
+                      <span className={`text-[11px] font-bold px-3 py-1 rounded-full ${
+                        order.status === 'completed'
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : order.status === 'delivered'
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'bg-zinc-100 text-zinc-800'
+                      }`}>
+                        {order.status.replace('_', ' ').toUpperCase()}
                       </span>
-                      <span className="text-sm font-black text-slate-900">₹{svc.price}</span>
                     </div>
 
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 line-clamp-1">{svc.title}</h4>
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">{svc.description}</p>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                      <span className="text-slate-400">{svc.deliveryDays}d turnaround</span>
-                      <button
-                        onClick={() => onDeleteService(svc.id)}
-                        className="text-rose-600 hover:text-rose-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Remove</span>
-                      </button>
+                    <div className="flex items-center justify-between text-xs text-zinc-500 pt-3 border-t border-zinc-100">
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={otherPartyAvatar}
+                          alt={otherPartyName}
+                          className="w-7 h-7 rounded-full object-cover ring-1 ring-zinc-200"
+                        />
+                        <span className="font-semibold text-zinc-800">{otherPartyName}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-extrabold text-sm text-zinc-950 tabular-nums">₹{order.amount}</span>
+                        <div className="p-1 rounded-lg group-hover:bg-zinc-100 text-zinc-400 group-hover:text-zinc-950 transition-colors">
+                          <MessageSquare className="w-4 h-4" />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
-        {/* Tab 3: My Task Requests */}
-        {activeTab === 'my_requests' && (
-          <div className="space-y-4">
-            {myRequests.length === 0 ? (
-              <div className="bg-white rounded-3xl p-10 text-center border border-slate-200 space-y-3">
-                <PlusCircle className="w-10 h-10 text-slate-400 mx-auto" />
-                <h3 className="text-base font-bold text-slate-900">No posted requests yet</h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Need help with something? Broadcast a request to nearby neighbors.
-                </p>
-                <div className="pt-2">
-                  <button
-                    onClick={onOpenPostRequest}
-                    className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 cursor-pointer"
-                  >
-                    + Post a Task Request
-                  </button>
+      {/* Tab 2: User's Offered Skills */}
+      {activeTab === 'my_services' && (
+        <div className="space-y-4">
+          {myServices.length === 0 ? (
+            <div className="bg-white rounded-3xl p-12 text-center border border-zinc-200/80 shadow-soft space-y-3">
+              <Briefcase className="w-8 h-8 text-zinc-400 mx-auto" />
+              <h3 className="text-base font-bold text-zinc-950">You haven't listed any skills yet</h3>
+              <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+                Offer your skills (repairs, tech setup, pet sitting, design) to neighbors in your area.
+              </p>
+              <button
+                onClick={onOpenPostService}
+                className="mt-2 px-5 py-2.5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl text-xs font-semibold shadow-soft cursor-pointer"
+              >
+                Offer a Skill Now
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {myServices.map((service) => (
+                <div
+                  key={service.id}
+                  className="bg-white rounded-3xl p-6 border border-zinc-200/80 shadow-soft flex flex-col justify-between space-y-4"
+                >
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-md">
+                      {service.category}
+                    </span>
+                    <h3 className="text-base font-bold text-zinc-950 mt-1">{service.title}</h3>
+                    <p className="text-xs text-zinc-500 line-clamp-2">{service.description}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-3 border-t border-zinc-100">
+                    <span className="font-bold text-base text-zinc-950 tabular-nums">₹{service.price}</span>
+                    <button
+                      onClick={() => onDeleteService(service.id)}
+                      className="p-1.5 rounded-xl hover:bg-rose-50 text-zinc-400 hover:text-rose-600 transition-colors cursor-pointer"
+                      title="Delete service"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {myRequests.map((req) => (
-                  <div key={req.id} className="p-4 bg-white rounded-2xl border border-slate-200 space-y-2 shadow-2xs">
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 3: User's Task Requests */}
+      {activeTab === 'my_requests' && (
+        <div className="space-y-4">
+          {myRequests.length === 0 ? (
+            <div className="bg-white rounded-3xl p-12 text-center border border-zinc-200/80 shadow-soft space-y-3">
+              <Plus className="w-8 h-8 text-zinc-400 mx-auto" />
+              <h3 className="text-base font-bold text-zinc-950">No task requests posted</h3>
+              <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+                Need immediate help with something in your home or neighborhood? Post a request.
+              </p>
+              <button
+                onClick={onOpenPostRequest}
+                className="mt-2 px-5 py-2.5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl text-xs font-semibold shadow-soft cursor-pointer"
+              >
+                Post a Task Request
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {myRequests.map((req) => (
+                <div
+                  key={req.id}
+                  className="bg-white rounded-3xl p-6 border border-zinc-200/80 shadow-soft flex flex-col justify-between space-y-4"
+                >
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-bold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-md">
                         {req.category}
                       </span>
-                      <span className="text-sm font-black text-slate-900">₹{req.budget}</span>
+                      <span className="text-xs text-zinc-500 font-semibold">{req.deadline}</span>
                     </div>
-                    <h4 className="text-sm font-bold text-slate-900">{req.title}</h4>
-                    <p className="text-xs text-slate-500">{req.description}</p>
-                    <p className="text-[11px] text-slate-400">Due: {req.deadline}</p>
+                    <h3 className="text-base font-bold text-zinc-950 mt-1">{req.title}</h3>
+                    <p className="text-xs text-zinc-500 line-clamp-2">{req.description}</p>
                   </div>
-                ))}
+
+                  <div className="flex items-center justify-between text-xs pt-3 border-t border-zinc-100">
+                    <span className="font-bold text-sm text-zinc-950">Budget: ₹{req.budget}</span>
+                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
+                      Active Broadcast
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 4: Wallet & Escrow Payouts */}
+      {activeTab === 'wallet' && (
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+          <div className="md:col-span-6 bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/80 shadow-soft space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-900 shadow-2xs">
+                <Wallet className="w-5 h-5" />
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab 4: Wallet */}
-        {activeTab === 'wallet' && (
-          <div className="max-w-md mx-auto space-y-5 bg-white p-6 rounded-3xl border border-slate-200 shadow-2xs">
-            <div className="space-y-1">
-              <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Available for Payout</span>
-              <p className="text-3xl font-heading font-black text-slate-900 tabular-nums">
-                ₹{completedEarnings}
-              </p>
-              {escrowHold > 0 && (
-                <p className="text-xs text-amber-700 font-medium">
-                  + ₹{escrowHold} held in active task escrow
-                </p>
-              )}
+              <div>
+                <h3 className="text-base font-bold text-zinc-950">Neighborly Escrow Balance</h3>
+                <p className="text-xs text-zinc-500">Earnings from completed tasks</p>
+              </div>
             </div>
 
-            <div className="space-y-1.5 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-800">Your UPI ID</label>
-              <input
-                type="text"
-                value={upiId}
-                onChange={(e) => setUpiId(e.target.value)}
-                placeholder="name@upi"
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900"
-              />
+            <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-200/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-zinc-500">Available for Payout</span>
+                <span className="text-2xl font-heading font-extrabold text-zinc-950 tabular-nums">
+                  ₹{completedEarnings}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-200/60">
+                <span>In-Escrow (Tasks in Progress)</span>
+                <span className="font-semibold text-zinc-800 tabular-nums">₹{escrowHold}</span>
+              </div>
             </div>
 
-            <button
-              onClick={handleWithdraw}
-              disabled={completedEarnings <= 0 || isWithdrawing}
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <ArrowUpRight className="w-4 h-4" />
-              <span>{isWithdrawing ? 'Transferring...' : `Withdraw ₹${completedEarnings} to UPI`}</span>
-            </button>
-
-            <div className="p-3 bg-emerald-50 rounded-xl text-[11px] text-emerald-900 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Zero marketplace commission for direct peer neighborhood help.</span>
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-zinc-900 block">UPI ID for Direct Payout</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
+                  className="flex-1 px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white"
+                />
+                <button
+                  type="button"
+                  disabled={completedEarnings <= 0 || isWithdrawing}
+                  onClick={handleWithdraw}
+                  className="px-5 py-2.5 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-white rounded-2xl text-xs font-bold transition-all shadow-soft cursor-pointer shrink-0"
+                >
+                  {isWithdrawing ? 'Sending...' : 'Withdraw'}
+                </button>
+              </div>
             </div>
           </div>
-        )}
 
-      </div>
+          <div className="md:col-span-6 bg-zinc-50/80 rounded-3xl p-6 sm:p-8 border border-zinc-200/80 shadow-2xs space-y-4">
+            <div className="flex items-center gap-2 text-xs font-bold text-zinc-950">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>How Escrow-Lite Protects You</span>
+            </div>
+            <ul className="space-y-3 text-xs text-zinc-600 leading-relaxed">
+              <li className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-950 mt-1.5 shrink-0" />
+                <span>When a client hires you, the money is locked safely in escrow before work begins.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-950 mt-1.5 shrink-0" />
+                <span>Once you complete the task and the neighbor confirms, funds are instantly added to your payout balance.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-950 mt-1.5 shrink-0" />
+                <span>Instant 0% fee payouts directly to your UPI ID without intermediaries.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
 
     </div>
   );

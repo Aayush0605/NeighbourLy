@@ -3,14 +3,14 @@ import {
   ArrowLeft, 
   MapPin, 
   Clock, 
-  RotateCcw, 
   ShieldCheck, 
   Heart, 
-  Sparkles, 
-  Zap, 
   Check, 
   User, 
-  MessageSquare
+  Lock,
+  Star,
+  Zap,
+  X
 } from 'lucide-react';
 import { ServiceListing, LocationPoint, UserProfile } from '../types';
 import { calculateDistanceKm } from '../utils/location';
@@ -56,193 +56,198 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex justify-center p-3 sm:p-4 md:p-6 animate-in fade-in duration-200">
-      <div className="relative bg-white rounded-3xl max-w-4xl w-full shadow-2xl border border-slate-200 overflow-hidden my-auto flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-150">
+      <div 
+        className="relative bg-white rounded-t-3xl sm:rounded-3xl max-w-4xl w-full shadow-soft-xl border border-zinc-200/90 overflow-hidden my-0 sm:my-auto flex flex-col max-h-[92vh] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+        <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/60 shrink-0">
           <button
             onClick={onClose}
-            className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-emerald-700 transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-xs font-bold text-zinc-600 hover:text-zinc-950 transition-colors cursor-pointer py-1"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to services</span>
           </button>
 
-          <button
-            onClick={() => onToggleSave(service.id)}
-            className={`p-2 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-              service.saved
-                ? 'bg-rose-50 text-rose-600 border-rose-200'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <Heart className={`w-3.5 h-3.5 ${service.saved ? 'fill-current text-rose-500' : ''}`} />
-            <span className="hidden sm:inline">{service.saved ? 'Saved' : 'Save'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onToggleSave(service.id)}
+              className={`p-2 sm:px-3 sm:py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                service.saved
+                  ? 'bg-rose-50 text-rose-600 border-rose-200'
+                  : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50 shadow-2xs'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${service.saved ? 'fill-current text-rose-500' : ''}`} />
+              <span className="hidden sm:inline">{service.saved ? 'Saved' : 'Save'}</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="sm:hidden p-2 rounded-xl text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Body */}
-        <div className="overflow-y-auto p-6 space-y-6 flex-1">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Scrollable Body with generous vertical spacing */}
+        <div className="overflow-y-auto p-6 sm:p-8 space-y-8 flex-1">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
             
-            {/* Left Column: Cover & Details */}
-            <div className="lg:col-span-7 space-y-5">
+            {/* Left Column: Details */}
+            <div className="lg:col-span-7 space-y-6">
               
-              {/* Visual Cover Header */}
-              <div className={`rounded-3xl bg-gradient-to-br ${service.coverGradient} p-6 text-white min-h-[200px] flex flex-col justify-between shadow-md`}>
+              {/* Clean Service Header Info */}
+              <div className="bg-zinc-50/80 rounded-3xl p-6 sm:p-7 border border-zinc-200/80 shadow-soft-xs space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider bg-white/10 px-2.5 py-1 rounded-md">
+                  <span className="text-xs font-bold text-zinc-700 bg-white px-3 py-1 rounded-xl border border-zinc-200/80 shadow-2xs">
                     {service.category}
                   </span>
-                  <span className="text-xs font-semibold bg-emerald-950/80 px-2 py-0.5 rounded-full flex items-center gap-1 text-emerald-300">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span>{distanceKm} km from you</span>
+                  <span className="text-xs font-semibold text-zinc-700 flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-blue-600" />
+                    <span>{distanceKm.toFixed(1)} km away</span>
                   </span>
                 </div>
 
-                <div className="my-3 space-y-1">
-                  <h2 className="text-2xl font-heading font-black tracking-tight text-white leading-tight">
+                <div className="space-y-1.5">
+                  <h2 className="text-2xl sm:text-3xl font-heading font-extrabold text-zinc-950 tracking-tight leading-tight">
                     {service.title}
                   </h2>
-                  <p className="text-xs text-white/80">
-                    Offered in {service.location?.neighborhood}, {service.location?.city}
+                  <p className="text-xs text-zinc-500">
+                    Located in {service.location?.neighborhood}, {service.location?.city}
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-white/70 border-t border-white/10 pt-2.5">
-                  <span>★ {service.rating.toFixed(1)} Rating</span>
-                  <span>{service.deliveryDays === 0 ? 'Same Day Help' : `${service.deliveryDays} Day Turnaround`}</span>
+                <div className="flex items-center gap-4 text-xs font-medium text-zinc-600 pt-3 border-t border-zinc-200/60">
+                  <span className="flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <strong className="text-zinc-900 font-bold">{service.rating.toFixed(1)}</strong>
+                    <span className="text-zinc-400">({service.reviewCount || 12} reviews)</span>
+                  </span>
+                  <span>·</span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                    <span>{service.deliveryDays === 0 ? 'Same Day Service' : `${service.deliveryDays} Day Turnaround`}</span>
+                  </span>
                 </div>
               </div>
 
               {/* Description */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-bold text-slate-900">About This Neighborhood Service</h3>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900">About This Neighborhood Service</h3>
+                <p className="text-sm text-zinc-600 leading-relaxed whitespace-pre-line">
                   {service.description}
                 </p>
               </div>
 
               {/* Skills tags */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-800">Skills & Focus</h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {service.skills.map((skill) => (
-                    <span key={skill} className="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg">
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-900">Skills & Expertise</h4>
+                <div className="flex flex-wrap gap-2">
+                  {service.skills.map((skill: string) => (
+                    <span key={skill} className="px-3 py-1 bg-zinc-100/90 text-zinc-700 text-xs font-medium rounded-xl border border-zinc-200/50">
                       {skill}
                     </span>
                   ))}
                 </div>
               </div>
 
-              {/* Trust Box */}
-              <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-100 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-950">
+              {/* Trust Box with larger radii */}
+              <div className="p-5 bg-zinc-50 rounded-2xl border border-zinc-200/80 shadow-2xs space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-zinc-950">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>NeighborLy Protection Guarantees</span>
+                  <span>Neighborly Protection Guarantees</span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-emerald-800">
-                  <div className="flex items-center gap-1.5">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Verified Neighbor Profile</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-zinc-600">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Verified neighbor identity</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Escrow Payment Safety</span>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Escrow holds payment until done</span>
                   </div>
                 </div>
               </div>
 
             </div>
 
-            {/* Right Column: Pricing & Order Action */}
-            <div className="lg:col-span-5 space-y-5">
-              
-              {/* Provider Info */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
-                <div className="flex items-center gap-3">
+            {/* Right Column: Pricing & Booking Card */}
+            <div className="lg:col-span-5">
+              <div className="bg-white rounded-3xl p-6 sm:p-7 border border-zinc-200/90 shadow-soft-md space-y-6 sticky top-4">
+                
+                {/* Provider Card */}
+                <div className="flex items-center gap-3.5 pb-5 border-b border-zinc-100">
                   <img
-                    src={service.provider.avatar}
-                    alt={service.provider.name}
-                    className="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-xs"
+                    src={service.provider?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                    alt={service.provider?.name || 'Neighbor'}
+                    referrerPolicy="no-referrer"
+                    className="w-12 h-12 rounded-full object-cover ring-2 ring-zinc-200"
                   />
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">{service.provider.name}</h4>
-                    <p className="text-xs text-slate-500">{service.location?.neighborhood}</p>
-                    <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100 px-1.5 py-0.2 rounded">
-                      Local Neighbor
-                    </span>
+                    <h4 className="text-sm font-bold text-zinc-950">{service.provider?.name}</h4>
+                    <p className="text-xs text-zinc-500">@{service.provider?.userId}</p>
+                    <p className="text-[11px] text-zinc-500 mt-0.5 flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-zinc-400" />
+                      <span>{service.provider?.location?.neighborhood || 'Current Neighborhood'}</span>
+                    </p>
                   </div>
                 </div>
-                <p className="text-xs text-slate-600 italic">
-                  "{service.provider.bio || 'Happy to help nearby neighbors with quality work!'}"
-                </p>
-              </div>
 
-              {/* Purchase Module */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                <div>
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fixed Peer Rate</span>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-3xl font-heading font-black text-slate-950 tabular-nums">
+                {/* Price Breakdown */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
+                    <span className="text-zinc-600 font-medium">Standard Service Rate</span>
+                    <span className="text-lg font-bold text-zinc-950 tabular-nums">₹{service.price}</span>
+                  </div>
+
+                  {service.rushPrice && (
+                    <label className="flex items-center justify-between p-3.5 rounded-2xl border border-zinc-200/90 bg-zinc-50/70 hover:bg-zinc-100/60 cursor-pointer transition-all text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <input
+                          type="checkbox"
+                          checked={isRushDelivery}
+                          onChange={(e) => setIsRushDelivery(e.target.checked)}
+                          className="accent-zinc-950 h-4 w-4 rounded"
+                        />
+                        <div>
+                          <p className="font-bold text-zinc-950">Rush Delivery (Same Day)</p>
+                          <p className="text-[10px] text-zinc-500">Priority neighbor scheduling</p>
+                        </div>
+                      </div>
+                      <span className="font-bold text-zinc-900">+₹{service.rushPrice}</span>
+                    </label>
+                  )}
+
+                  <div className="pt-4 border-t border-zinc-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-zinc-950">Total Escrow Amount</span>
+                      <p className="text-[10px] text-zinc-400">Held until you approve completion</p>
+                    </div>
+                    <span className="text-2xl sm:text-3xl font-heading font-extrabold text-zinc-950 tabular-nums">
                       ₹{totalPrice}
                     </span>
-                    <span className="text-xs text-slate-500">all-inclusive</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 py-2 border-y border-slate-100 text-xs text-slate-600">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-emerald-600" />
-                    <span>{isRushDelivery ? 'Fast Turnaround' : `${service.deliveryDays} Day Turnaround`}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <RotateCcw className="w-4 h-4 text-emerald-600" />
-                    <span>{service.revisions} Revisions</span>
-                  </div>
-                </div>
-
-                {/* Rush toggle if available */}
-                {service.rushPrice && service.rushPrice > 0 && (
-                  <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-amber-950 flex items-center gap-1">
-                        <Zap className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Need it urgently?</span>
-                      </p>
-                      <p className="text-[11px] text-amber-800">
-                        Priority turnaround (+₹{service.rushPrice})
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsRushDelivery(!isRushDelivery)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                        isRushDelivery
-                          ? 'bg-amber-600 text-white'
-                          : 'bg-white text-amber-900 border border-amber-300'
-                      }`}
-                    >
-                      {isRushDelivery ? 'Added' : '+ Add Rush'}
-                    </button>
-                  </div>
-                )}
-
+                {/* Action button */}
                 <button
                   type="button"
                   onClick={handleBookClick}
-                  className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl text-xs sm:text-sm font-semibold shadow-soft hover:shadow-soft-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Request This Service (₹{totalPrice})</span>
+                  <Lock className="w-4 h-4" />
+                  <span>Book with Escrow-Lite</span>
                 </button>
 
-                <p className="text-[11px] text-center text-slate-400">
-                  Payment is held in Escrow-Lite until you confirm completion.
+                <p className="text-[11px] text-center text-zinc-400 leading-snug">
+                  Payment is safely held in escrow and released only when you confirm the service is delivered.
                 </p>
-              </div>
 
+              </div>
             </div>
 
           </div>

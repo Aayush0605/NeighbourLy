@@ -1,32 +1,35 @@
 import React, { useState } from 'react';
 import { 
   MapPin, 
-  Search, 
-  PlusCircle, 
+  Plus, 
   MessageSquare, 
   User, 
   LogOut, 
   ChevronDown, 
   Target, 
+  Briefcase,
   Sparkles,
-  Sliders,
   ShieldCheck,
-  Briefcase
+  Compass
 } from 'lucide-react';
 import { LocationPoint, UserProfile } from '../types';
+import { NeighborLyLogo } from './NeighborLyLogo';
+
+export type NavViewType = 'home' | 'browse' | 'orders' | 'ai' | 'admin' | 'auth';
 
 interface NavbarProps {
   currentLocation: LocationPoint;
   radiusKm: number;
   isWorkFromCurrentLocation: boolean;
   onOpenLocationPicker: () => void;
-  activeView: 'home' | 'browse' | 'orders';
-  onNavigate: (view: 'home' | 'browse' | 'orders') => void;
+  activeView: NavViewType;
+  onNavigate: (view: NavViewType) => void;
   currentUser: UserProfile | null;
   onOpenAuth: (mode?: 'login' | 'signup') => void;
   onLogout: () => void;
   onOpenPostRequest: () => void;
   onOpenPostService: () => void;
+  onOpenAiAssistant: () => void;
   activeOrdersCount: number;
 }
 
@@ -42,167 +45,226 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
   onOpenPostRequest,
   onOpenPostService,
+  onOpenAiAssistant,
   activeOrdersCount,
 }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200/80 shadow-soft-xs">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
         
-        {/* Brand & Location Trigger */}
-        <div className="flex items-center gap-3 md:gap-5">
+        {/* Left Section: Brand Logo & Hyperlocal Chip */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button 
             onClick={() => onNavigate('home')} 
-            className="flex items-center gap-2 group text-left cursor-pointer focus-visible:outline-none"
+            className="flex items-center group text-left cursor-pointer focus-visible:outline-none shrink-0"
           >
-            <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-200 group-hover:bg-emerald-700 transition-colors">
-              <span className="font-heading font-black text-lg">N</span>
-            </div>
-            <span className="text-xl font-heading font-black tracking-tight text-slate-900">
-              Neighbor<span className="text-emerald-600">Ly</span>
-            </span>
+            <NeighborLyLogo size="md" />
           </button>
 
-          {/* Location Button ("Select work from current location") */}
+          {/* Hyperlocal Location Chip - Always strictly single line, no wrapping */}
           <button
             onClick={onOpenLocationPicker}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200/90 rounded-full text-xs font-semibold text-slate-700 transition-all border border-slate-200/80 cursor-pointer shadow-2xs"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-zinc-50 hover:bg-zinc-100 rounded-xl text-xs font-semibold text-zinc-700 transition-all border border-zinc-200/90 shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
             title="Change Location or Set Radius"
           >
-            <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span className="max-w-[130px] sm:max-w-[180px] truncate">
+            <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span className="max-w-[90px] xs:max-w-[120px] sm:max-w-[150px] md:max-w-[170px] truncate">
               {currentLocation.neighborhood || currentLocation.city}
             </span>
-            <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/80 px-1.5 py-0.2 rounded-full hidden sm:inline">
+            <span className="text-[10px] text-zinc-600 font-bold bg-zinc-200/80 px-1.5 py-0.2 rounded-md hidden xs:inline shrink-0">
               {radiusKm}km
             </span>
-            <ChevronDown className="w-3 h-3 text-slate-400" />
+            <ChevronDown className="w-3 h-3 text-zinc-400 shrink-0" />
           </button>
         </div>
 
-        {/* Center Nav Links */}
-        <nav className="hidden md:flex items-center gap-6 text-xs sm:text-sm font-semibold text-slate-600">
+        {/* Center Section: Primary Navigation Links (Desktop) */}
+        <nav className="hidden md:flex items-center gap-1 lg:gap-2 shrink-0">
+          {/* Home */}
           <button
             onClick={() => onNavigate('home')}
-            className={`transition-colors hover:text-emerald-600 cursor-pointer ${
-              activeView === 'home' ? 'text-emerald-600 font-bold' : ''
+            className={`px-3 py-1.5 rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+              activeView === 'home'
+                ? 'bg-zinc-100 text-zinc-950 font-bold'
+                : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50'
             }`}
           >
             Home
           </button>
+          
+          {/* Explore */}
           <button
             onClick={() => onNavigate('browse')}
-            className={`transition-colors hover:text-emerald-600 cursor-pointer flex items-center gap-1.5 ${
-              activeView === 'browse' ? 'text-emerald-600 font-bold' : ''
+            className={`px-3 py-1.5 rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 cursor-pointer ${
+              activeView === 'browse'
+                ? 'bg-zinc-100 text-zinc-950 font-bold'
+                : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50'
             }`}
           >
-            <span>Browse Nearby</span>
+            <span>Explore</span>
             {isWorkFromCurrentLocation && (
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Work from current location enabled"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" title="Filtered to radius" />
             )}
           </button>
+
+          {/* My Tasks */}
           <button
             onClick={() => {
               if (!currentUser) onOpenAuth('login');
               else onNavigate('orders');
             }}
-            className={`transition-colors hover:text-emerald-600 cursor-pointer flex items-center gap-1.5 ${
-              activeView === 'orders' ? 'text-emerald-600 font-bold' : ''
+            className={`px-3 py-1.5 rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 cursor-pointer ${
+              activeView === 'orders'
+                ? 'bg-zinc-100 text-zinc-950 font-bold'
+                : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50'
             }`}
           >
-            <span>My Tasks & Orders</span>
+            <span>My Tasks</span>
             {activeOrdersCount > 0 && (
-              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+              <span className="bg-zinc-950 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full tabular-nums">
                 {activeOrdersCount}
               </span>
             )}
           </button>
-        </nav>
 
-        {/* Right Action Buttons */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          {/* Post Service / Offer a skill */}
+          {/* AI Assistant - Requested Feature */}
           <button
-            onClick={onOpenPostService}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 rounded-xl transition-colors border border-slate-200 cursor-pointer"
+            onClick={() => onNavigate('ai')}
+            className={`px-3 py-1.5 rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeView === 'ai'
+                ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200/70 shadow-2xs'
+                : 'text-indigo-600 hover:bg-indigo-50/70'
+            }`}
           >
-            <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Offer a Skill</span>
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <span>AI Assistant</span>
+            <span className="text-[10px] bg-indigo-100 text-indigo-700 font-extrabold px-1.5 py-0.2 rounded-md">
+              AI
+            </span>
           </button>
 
-          {/* Post a Task */}
+          {/* Admin Dashboard - Requested Feature */}
+          <button
+            onClick={() => onNavigate('admin')}
+            className={`px-3 py-1.5 rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 cursor-pointer ${
+              activeView === 'admin'
+                ? 'bg-zinc-900 text-white font-bold shadow-soft-xs'
+                : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+            <span>Admin</span>
+          </button>
+        </nav>
+
+        {/* Right Section: Action Buttons & Authentication */}
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          
+          {/* Offer a Skill (Compact, strictly single-line) */}
+          <button
+            onClick={onOpenPostService}
+            className="hidden xl:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-zinc-700 bg-white hover:bg-zinc-50 rounded-xl transition-all border border-zinc-200/90 shadow-2xs cursor-pointer whitespace-nowrap shrink-0"
+          >
+            <Briefcase className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+            <span>Offer Skill</span>
+          </button>
+
+          {/* Post a Task Button (High Contrast, single-line, no text wrapping) */}
           <button
             onClick={onOpenPostRequest}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-zinc-950 hover:bg-zinc-800 rounded-xl transition-all shadow-soft hover:shadow-soft-md cursor-pointer whitespace-nowrap shrink-0"
           >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>Post a Task</span>
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span>Post Task</span>
           </button>
 
           {/* User Profile / Auth State */}
           {currentUser ? (
-            <div className="relative">
+            <div className="relative shrink-0">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 p-1 pl-1.5 pr-2 rounded-full hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 p-1 sm:p-1.5 pl-1.5 pr-2 sm:pr-2.5 rounded-full hover:bg-zinc-100/90 border border-zinc-200/90 transition-all cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
               >
                 <img
                   src={currentUser.avatar}
                   alt={currentUser.name}
                   referrerPolicy="no-referrer"
-                  className="w-7 h-7 rounded-full object-cover ring-1 ring-emerald-500/40"
+                  className="w-7 h-7 rounded-full object-cover ring-1 ring-zinc-300 shrink-0"
                 />
-                <span className="text-xs font-bold text-slate-800 hidden sm:inline">
+                <span className="text-xs font-semibold text-zinc-800 hidden sm:inline max-w-[80px] truncate">
                   {currentUser.name.split(' ')[0]}
                 </span>
-                <ChevronDown className="w-3 h-3 text-slate-400" />
+                <ChevronDown className="w-3 h-3 text-zinc-400 shrink-0" />
               </button>
 
               {isUserMenuOpen && (
                 <div 
-                  className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+                  className="absolute right-0 mt-2.5 w-64 bg-white rounded-2xl shadow-soft-xl border border-zinc-200/80 py-2 z-50 animate-in fade-in zoom-in-95 duration-150"
                   onClick={() => setIsUserMenuOpen(false)}
                 >
-                  <div className="px-4 py-3 border-b border-slate-100">
+                  <div className="px-4 py-3 border-b border-zinc-100">
                     <div className="flex items-center gap-2">
-                      <p className="text-xs sm:text-sm font-bold text-slate-900">{currentUser.name}</p>
-                      <span className="text-[10px] text-emerald-700 bg-emerald-50 font-bold px-1.5 py-0.5 rounded">
+                      <p className="text-xs font-bold text-zinc-950 truncate">{currentUser.name}</p>
+                      <span className="text-[10px] text-zinc-500 bg-zinc-100 font-mono px-1.5 py-0.5 rounded-md">
                         @{currentUser.userId}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 truncate">{currentUser.email}</p>
-                    <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-1">
-                      <MapPin className="w-3 h-3 text-emerald-600" />
-                      <span>{currentUser.location?.neighborhood || 'Current Neighborhood'}</span>
+                    <p className="text-[11px] text-zinc-500 truncate mt-0.5">{currentUser.email}</p>
+                    <p className="text-[11px] text-zinc-500 flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-zinc-100">
+                      <MapPin className="w-3 h-3 text-blue-600 shrink-0" />
+                      <span className="truncate">{currentUser.location?.neighborhood || 'Current Neighborhood'}</span>
                     </p>
                   </div>
 
-                  <div className="py-1 text-xs font-medium text-slate-700">
+                  <div className="py-1.5 text-xs text-zinc-700">
                     <button
                       onClick={() => onNavigate('orders')}
-                      className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer"
+                      className="w-full text-left px-4 py-2.5 hover:bg-zinc-50 flex items-center justify-between cursor-pointer font-medium"
                     >
-                      <MessageSquare className="w-4 h-4 text-emerald-600" />
-                      <span>My Active Tasks & Orders</span>
+                      <div className="flex items-center gap-2.5">
+                        <MessageSquare className="w-4 h-4 text-zinc-500" />
+                        <span>My Tasks & Orders</span>
+                      </div>
+                      {activeOrdersCount > 0 && (
+                        <span className="text-[10px] font-bold bg-zinc-950 text-white px-2 py-0.5 rounded-full">
+                          {activeOrdersCount}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => onNavigate('ai')}
+                      className="w-full text-left px-4 py-2.5 hover:bg-indigo-50/70 text-indigo-700 flex items-center gap-2.5 cursor-pointer font-medium"
+                    >
+                      <Sparkles className="w-4 h-4 text-indigo-600" />
+                      <span>AI Assistant</span>
+                    </button>
+                    <button
+                      onClick={() => onNavigate('admin')}
+                      className="w-full text-left px-4 py-2.5 hover:bg-zinc-50 flex items-center gap-2.5 cursor-pointer font-medium"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-zinc-600" />
+                      <span>Admin Dashboard</span>
                     </button>
                     <button
                       onClick={onOpenPostService}
-                      className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer sm:hidden"
+                      className="w-full text-left px-4 py-2.5 hover:bg-zinc-50 flex items-center gap-2.5 cursor-pointer font-medium"
                     >
-                      <Briefcase className="w-4 h-4 text-emerald-600" />
+                      <Briefcase className="w-4 h-4 text-zinc-500" />
                       <span>Offer a Skill / Service</span>
                     </button>
                     <button
                       onClick={onOpenLocationPicker}
-                      className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer"
+                      className="w-full text-left px-4 py-2.5 hover:bg-zinc-50 flex items-center gap-2.5 cursor-pointer font-medium"
                     >
-                      <Target className="w-4 h-4 text-emerald-600" />
-                      <span>Work from Current Location</span>
+                      <Target className="w-4 h-4 text-zinc-500" />
+                      <span>Change Radius & Location</span>
                     </button>
+                    <div className="my-1 border-t border-zinc-100" />
                     <button
                       onClick={onLogout}
-                      className="w-full text-left px-4 py-2 hover:bg-rose-50 text-rose-600 flex items-center gap-2.5 border-t border-slate-100 cursor-pointer"
+                      className="w-full text-left px-4 py-2.5 hover:bg-rose-50 text-rose-600 flex items-center gap-2.5 cursor-pointer font-medium transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Sign Out</span>
@@ -212,16 +274,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button
                 onClick={() => onOpenAuth('login')}
-                className="px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                className="px-2.5 sm:px-3.5 py-2 text-xs font-semibold text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100/80 rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 Log In
               </button>
               <button
                 onClick={() => onOpenAuth('signup')}
-                className="hidden sm:inline-flex px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors border border-emerald-200 cursor-pointer"
+                className="px-3 sm:px-4 py-2 text-xs font-semibold text-white bg-zinc-950 hover:bg-zinc-800 rounded-xl transition-all shadow-soft hover:shadow-soft-md cursor-pointer whitespace-nowrap shrink-0"
               >
                 Sign Up
               </button>

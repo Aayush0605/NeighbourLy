@@ -3,7 +3,6 @@ import {
   Search, 
   MapPin, 
   Clock, 
-  Zap, 
   ShieldCheck, 
   Wrench, 
   Laptop, 
@@ -12,11 +11,13 @@ import {
   Dog, 
   ShoppingBag, 
   ArrowRight,
-  Sparkles,
-  Target,
-  Navigation
+  Navigation,
+  CheckCircle2,
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import { ServiceCategory, LocationPoint } from '../types';
+import { NeighborLyLogo } from './NeighborLyLogo';
 
 interface LandingHeroProps {
   onSearch: (query: string) => void;
@@ -57,242 +58,208 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
     {
       id: 'Home & Repairs',
       title: 'Home & Repairs',
-      subtitle: 'Assembly, Electrical, Fixing',
+      desc: 'Assembly, electrical, fixing',
       icon: Wrench,
-      color: 'bg-amber-50 text-amber-700 border-amber-200/70',
+      accent: 'from-amber-500/10 to-orange-500/10 text-amber-700',
     },
     {
       id: 'Tech & Digital',
       title: 'Tech & Digital',
-      subtitle: 'PC, Wi-Fi, Coding, Setup',
+      desc: 'Wi-Fi, PC setup, troubleshooting',
       icon: Laptop,
-      color: 'bg-blue-50 text-blue-700 border-blue-200/70',
+      accent: 'from-blue-500/10 to-indigo-500/10 text-blue-700',
     },
     {
       id: 'Creative & Design',
       title: 'Creative & Design',
-      subtitle: 'PPTs, Video, Posters, Logos',
+      desc: 'Presentations, design, media',
       icon: Palette,
-      color: 'bg-purple-50 text-purple-700 border-purple-200/70',
+      accent: 'from-purple-500/10 to-pink-500/10 text-purple-700',
     },
     {
       id: 'Lessons & Tutoring',
       title: 'Lessons & Tutoring',
-      subtitle: 'Exams, Languages, Math',
+      desc: 'Math, languages, academics',
       icon: BookOpen,
-      color: 'bg-emerald-50 text-emerald-700 border-emerald-200/70',
+      accent: 'from-emerald-500/10 to-teal-500/10 text-emerald-700',
     },
     {
       id: 'Pet Care',
       title: 'Pet Care',
-      subtitle: 'Walking, Sitting, Grooming',
+      desc: 'Dog walking, pet sitting',
       icon: Dog,
-      color: 'bg-rose-50 text-rose-700 border-rose-200/70',
+      accent: 'from-rose-500/10 to-pink-500/10 text-rose-700',
     },
     {
       id: 'Errands & Delivery',
       title: 'Errands & Delivery',
-      subtitle: 'Pickups, Groceries, Moving',
+      desc: 'Local pickups, groceries, errands',
       icon: ShoppingBag,
-      color: 'bg-teal-50 text-teal-700 border-teal-200/70',
+      accent: 'from-sky-500/10 to-cyan-500/10 text-sky-700',
     },
   ];
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-emerald-50/20 to-white pt-8 pb-16">
+    <div className="relative border-b border-zinc-200/70 bg-gradient-to-b from-white via-zinc-50/40 to-white py-12 sm:py-16 md:py-20 lg:py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Main Hero Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           
           {/* Left Column: Headline, Search, Value Badges */}
-          <div className="lg:col-span-7 space-y-6">
+          <div className="lg:col-span-7 space-y-6 sm:space-y-8">
             
-            {/* Title with handwritten doodle element */}
-            <div className="relative">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-black tracking-tight text-slate-950 leading-[1.08] max-w-xl text-balance">
-                Local Skills Today. <br />
-                <span className="text-emerald-700">Support Tomorrow.</span>
-              </h1>
-
-              {/* Playful Handwritten Note with Curved Arrow */}
-              <div className="hidden sm:flex absolute -top-5 right-6 lg:right-10 items-center gap-1.5 transform rotate-3">
-                <span className="font-handwriting text-2xl lg:text-3xl font-bold text-emerald-700 tracking-wide">
-                  Same Neighborhood <br />
-                  <span className="text-indigo-600">Faster Help</span>
-                </span>
-                <svg className="w-8 h-8 text-emerald-600 transform -scale-x-100 rotate-45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 19V5M5 12l7-7 7 7"/>
-                </svg>
-              </div>
-            </div>
-
-            <p className="text-base sm:text-lg text-slate-600 font-normal max-w-xl leading-relaxed">
-              Get tasks done by trusted neighbors right in your area. <br className="hidden sm:inline" />
-              <span className="font-bold text-slate-900">Hyperlocal. Affordable. Escrow-Protected.</span>
-            </p>
-
-            {/* Location banner & Work from Current Location quick switch */}
-            <div className="flex flex-wrap items-center gap-2 p-2.5 bg-white rounded-2xl border border-slate-200 shadow-xs max-w-xl text-xs">
-              <div className="flex items-center gap-1.5 text-slate-700 font-semibold flex-1 truncate">
-                <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span className="truncate">
-                  {currentLocation.neighborhood}, {currentLocation.city}
-                </span>
-                <span className="text-emerald-700 bg-emerald-100 text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0">
-                  within {radiusKm}km
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={onDetectLocation}
-                  className="px-2.5 py-1 text-slate-700 hover:text-emerald-700 hover:bg-slate-100 rounded-lg font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                  title="Detect GPS"
-                >
-                  <Navigation className="w-3 h-3 text-emerald-600" />
-                  <span>GPS</span>
-                </button>
+            {/* Top Brand & Location context */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <NeighborLyLogo variant="badge" />
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100/90 text-zinc-700 text-xs font-medium border border-zinc-200/80 shadow-2xs">
+                <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>Near <strong>{currentLocation.neighborhood || currentLocation.city}</strong></span>
+                <span className="text-zinc-300">·</span>
+                <span className="text-zinc-600 font-semibold">{radiusKm}km</span>
                 <button
                   type="button"
                   onClick={onOpenLocationPicker}
-                  className="px-3 py-1 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer"
+                  className="text-blue-600 hover:text-blue-700 font-semibold text-xs ml-0.5 cursor-pointer hover:underline"
                 >
-                  Change Radius
+                  Change
                 </button>
               </div>
             </div>
 
-            {/* Search Bar */}
+            {/* Clean headline with generous vertical breathing room */}
+            <div className="space-y-4">
+              <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-heading font-extrabold tracking-tight text-zinc-950 leading-[1.1] text-balance">
+                Neighborhood skills, <br />
+                <span className="text-zinc-900">right on your street.</span>
+              </h1>
+              <p className="text-sm sm:text-base lg:text-lg text-zinc-600 font-normal max-w-xl leading-relaxed">
+                Connect directly with trusted neighbors for home repairs, tech setup, pet care, tutoring, and daily tasks. Verified local profiles with escrow protection.
+              </p>
+            </div>
+
+            {/* Search Bar with larger radii and soft depth */}
             <form onSubmit={handleSearchSubmit} className="max-w-xl">
-              <div className="relative flex items-center bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-200 p-2 focus-within:ring-2 focus-within:ring-emerald-600/30 focus-within:border-emerald-600 transition-all">
-                <Search className="w-5 h-5 text-slate-400 ml-3 shrink-0" />
-                <input
-                  type="text"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="What do you need help with? (e.g. Wi-Fi setup, PPT, painting, tutoring)"
-                  className="w-full px-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 bg-transparent focus:outline-none"
-                />
+              <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white rounded-2xl sm:rounded-3xl shadow-soft hover:shadow-soft-md border border-zinc-300/90 focus-within:border-zinc-950 focus-within:ring-2 focus-within:ring-zinc-950/10 transition-all p-1.5 sm:p-2 gap-2">
+                <div className="flex items-center flex-1 px-2.5 py-1 sm:py-0">
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-400 mr-2.5 shrink-0" />
+                  <input
+                    type="text"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="What do you need help with? (e.g. Wi-Fi setup, painting, plumbing)"
+                    className="w-full text-xs sm:text-sm text-zinc-900 placeholder:text-zinc-400 bg-transparent focus:outline-none min-h-[40px]"
+                  />
+                </div>
                 <button
                   type="submit"
-                  className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-200 transition-colors flex items-center gap-2 shrink-0 cursor-pointer"
+                  className="px-5 py-3 sm:py-3.5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-soft flex items-center justify-center gap-2 shrink-0 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
                 >
-                  <Search className="w-4 h-4" />
-                  <span className="hidden sm:inline">Search</span>
+                  <span>Find Help</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </form>
 
-            {/* 4 Trust Badges */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1 max-w-xl">
-              <div className="flex items-center gap-2.5 p-2.5 bg-white/90 rounded-2xl border border-slate-100 shadow-2xs">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-                  <MapPin className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-bold text-slate-900">Near You</p>
-                  <p className="text-[11px] text-slate-500 font-medium">{radiusKm}km Radius</p>
-                </div>
-              </div>
+            {/* Quick Actions & GPS */}
+            <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
+              <button
+                type="button"
+                onClick={onDetectLocation}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 font-medium transition-all shadow-2xs hover:shadow-soft-xs cursor-pointer"
+              >
+                <Navigation className="w-3.5 h-3.5 text-blue-600" />
+                <span>Use Current GPS Location</span>
+              </button>
+              <button
+                type="button"
+                onClick={onPostRequest}
+                className="inline-flex items-center gap-1.5 text-zinc-600 hover:text-zinc-950 font-medium transition-colors cursor-pointer py-1"
+              >
+                <span>Need something done urgently?</span>
+                <span className="font-semibold text-blue-600 hover:underline">Post a task request →</span>
+              </button>
+            </div>
 
-              <div className="flex items-center gap-2.5 p-2.5 bg-white/90 rounded-2xl border border-slate-100 shadow-2xs">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-bold text-slate-900">Peer Rates</p>
-                  <p className="text-[11px] text-slate-500 font-medium">From ₹100</p>
-                </div>
+            {/* 3 Clean Trust Points (Unboxed metadata style) */}
+            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-zinc-100 max-w-xl">
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-zinc-900">Hyperlocal</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Under {radiusKm}km radius</p>
               </div>
-
-              <div className="flex items-center gap-2.5 p-2.5 bg-white/90 rounded-2xl border border-slate-100 shadow-2xs">
-                <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
-                  <Zap className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-bold text-slate-900">Same Day</p>
-                  <p className="text-[11px] text-slate-500 font-medium">Fast Help</p>
-                </div>
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-zinc-900">Escrow Protected</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Pay only when satisfied</p>
               </div>
-
-              <div className="flex items-center gap-2.5 p-2.5 bg-white/90 rounded-2xl border border-slate-100 shadow-2xs">
-                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-bold text-slate-900">Escrow Safe</p>
-                  <p className="text-[11px] text-slate-500 font-medium">Protected</p>
-                </div>
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-zinc-900">Zero Agency Fees</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Direct neighbor rates</p>
               </div>
             </div>
 
           </div>
 
-          {/* Right Column: Interactive Card */}
+          {/* Right Column: Clean Community Hub Spotlight */}
           <div className="lg:col-span-5">
-            <div className="relative mx-auto max-w-md lg:max-w-none">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/80 shadow-soft-lg space-y-6 relative overflow-hidden">
               
-              {/* Blur glow */}
-              <div className="absolute -inset-1.5 bg-gradient-to-tr from-emerald-500 to-indigo-500 rounded-3xl opacity-20 blur-xl"></div>
-              
-              <div className="relative bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 overflow-hidden space-y-4">
-                
-                {/* Header */}
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="text-xs font-bold text-slate-800">Hyperlocal Community Hub</span>
+              {/* Header inside radar card */}
+              <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
+                <div className="space-y-1">
+                  <span className="text-[11px] uppercase tracking-wider font-bold text-zinc-400">Neighborhood Hub</span>
+                  <h3 className="text-lg font-bold text-zinc-950">{currentLocation.neighborhood}</h3>
+                </div>
+                <button
+                  onClick={onOpenLocationPicker}
+                  className="px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50/80 hover:bg-blue-100/70 rounded-xl transition-colors cursor-pointer"
+                >
+                  Adjust Radius
+                </button>
+              </div>
+
+              {/* Proximity Information Card with subtle shadow */}
+              <div className="space-y-4 bg-zinc-50/80 rounded-2xl p-5 border border-zinc-200/60 shadow-2xs">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-2xl bg-white border border-zinc-200/80 shadow-soft-xs flex items-center justify-center shrink-0 text-blue-600">
+                    <MapPin className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    {currentLocation.city}
+                  <div className="space-y-1">
+                    <p className="text-xs sm:text-sm font-bold text-zinc-900">Active Hyperlocal Radar</p>
+                    <p className="text-xs text-zinc-500 leading-relaxed">
+                      Showing vetted services within <strong className="text-zinc-800 font-semibold">{radiusKm} km</strong> of {currentLocation.neighborhood}, {currentLocation.city}.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-zinc-200/60 flex items-center justify-between text-xs text-zinc-600">
+                  <span className="flex items-center gap-2">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span className="font-medium text-zinc-700">GPS Live Tracking</span>
                   </span>
+                  <span className="font-semibold text-zinc-900">Direct booking</span>
                 </div>
+              </div>
 
-                {/* Hero Showcase Card */}
-                <div className="rounded-2xl bg-gradient-to-br from-emerald-950 via-slate-900 to-indigo-950 text-white p-5 space-y-3 relative overflow-hidden">
-                  <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] font-medium text-emerald-200">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Work from your current location</span>
-                  </div>
-
-                  <h3 className="text-xl font-heading font-black tracking-tight text-white leading-snug">
-                    Offer skills to your neighbors or get local tasks done quickly.
-                  </h3>
-
-                  <p className="text-xs text-emerald-200/90 leading-relaxed">
-                    Zero middlemen. Direct neighbor collaboration with built-in escrow payment safety.
-                  </p>
-
-                  <div className="pt-2 flex items-center gap-2">
-                    <button
-                      onClick={onPostService}
-                      className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl transition-all text-center cursor-pointer shadow-sm"
-                    >
-                      Offer a Skill
-                    </button>
-                    <button
-                      onClick={onPostRequest}
-                      className="flex-1 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl transition-all border border-white/20 text-center cursor-pointer"
-                    >
-                      Post a Request
-                    </button>
-                  </div>
-                </div>
-
-                {/* Micro info counters */}
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <p className="text-sm font-black text-slate-900">0% Commission</p>
-                    <p className="text-[10px] text-slate-500">For Direct Peer Help</p>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <p className="text-sm font-black text-emerald-700">GPS Matched</p>
-                    <p className="text-[10px] text-slate-500">Within Your Radius</p>
-                  </div>
-                </div>
-
+              {/* Action Buttons */}
+              <div className="space-y-3 pt-1">
+                <button
+                  type="button"
+                  onClick={onPostRequest}
+                  className="w-full py-3.5 px-5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-soft hover:shadow-soft-md hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  <span>Post a Task Needed</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onPostService}
+                  className="w-full py-3.5 px-5 bg-zinc-50 hover:bg-zinc-100 text-zinc-800 rounded-2xl text-xs sm:text-sm font-semibold border border-zinc-200/90 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs hover:shadow-soft-xs"
+                >
+                  <span>Offer a Skill / Service</span>
+                </button>
               </div>
 
             </div>
@@ -300,43 +267,49 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
 
         </div>
 
-        {/* 6 Category Tiles */}
-        <div className="mt-14 pt-8 border-t border-slate-200/60">
+        {/* Category Row (Responsive scroll on mobile, clean grid on desktop) */}
+        <div className="mt-14 sm:mt-20 pt-10 sm:pt-12 border-t border-zinc-200/60">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-lg font-heading font-bold text-slate-900">Explore Neighborhood Skills</h2>
-              <p className="text-xs text-slate-500">Find neighbors who can assist you in your local area</p>
+              <h2 className="text-lg sm:text-xl font-heading font-extrabold text-zinc-950">Explore by Category</h2>
+              <p className="text-xs sm:text-sm text-zinc-500 mt-0.5">Popular services requested in your area</p>
             </div>
             <button
-              onClick={onNavigateBrowse}
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
+              onClick={() => {
+                onSelectCategory('All');
+                onNavigateBrowse();
+              }}
+              className="text-xs font-bold text-zinc-700 hover:text-zinc-950 flex items-center gap-1 cursor-pointer py-1"
             >
-              <span>View all services</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <span>View all</span>
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          {/* Horizontal scroll on mobile (no-scrollbar), clean grid on tablet & desktop */}
+          <div className="flex sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4 overflow-x-auto no-scrollbar pb-2 sm:pb-0">
             {categories.map((cat) => {
               const Icon = cat.icon;
               return (
                 <button
                   key={cat.id}
                   onClick={() => {
-                    onSelectCategory(cat.id as any);
+                    onSelectCategory(cat.id as ServiceCategory);
                     onNavigateBrowse();
                   }}
-                  className={`group p-4 bg-white hover:bg-slate-50 rounded-2xl border text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${cat.color}`}
+                  className="group min-w-[150px] sm:min-w-0 p-4 sm:p-5 bg-white hover:bg-zinc-50/70 rounded-2xl sm:rounded-3xl border border-zinc-200/80 hover:border-zinc-300 shadow-soft-xs hover:shadow-soft-md transition-all duration-200 text-left cursor-pointer flex flex-col justify-between hover:-translate-y-1"
                 >
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-white shadow-xs">
-                    <Icon className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-2xl bg-zinc-100/80 group-hover:bg-white border border-zinc-200/70 flex items-center justify-center text-zinc-700 mb-4 transition-all shadow-2xs group-hover:shadow-soft-xs">
+                    <Icon className="w-5 h-5 text-zinc-800" />
                   </div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                    {cat.title}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
-                    {cat.subtitle}
-                  </p>
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold text-zinc-950 group-hover:text-blue-600 transition-colors line-clamp-1">
+                      {cat.title}
+                    </p>
+                    <p className="text-[11px] text-zinc-500 line-clamp-1 mt-1 leading-snug">
+                      {cat.desc}
+                    </p>
+                  </div>
                 </button>
               );
             })}

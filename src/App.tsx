@@ -36,15 +36,21 @@ import { LocationPickerModal } from './components/LocationPickerModal';
 import { AuthModal } from './components/AuthModal';
 import { ChatOrderModal } from './components/ChatOrderModal';
 import { MyTasksOrdersView } from './components/MyTasksOrdersView';
+import { AiAssistantModal } from './components/AiAssistantModal';
+import { AdminDashboard } from './components/AdminDashboard';
+import { NeighborLyLogo } from './components/NeighborLyLogo';
 import { 
   MapPin, 
   ShieldCheck, 
-  Heart, 
-  Sparkles, 
   Lock, 
-  Briefcase, 
-  PlusCircle, 
-  Check 
+  Check,
+  Home,
+  Compass,
+  PlusCircle,
+  MessageSquare,
+  User,
+  Plus,
+  Sparkles
 } from 'lucide-react';
 
 export default function App() {
@@ -62,7 +68,34 @@ export default function App() {
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
 
   // Navigation View
-  const [activeView, setActiveView] = useState<'home' | 'browse' | 'orders'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'browse' | 'orders' | 'ai' | 'admin' | 'auth'>('home');
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
+  // Sync Hash for direct navigation (e.g. #/admin, #login, #signup)
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash.toLowerCase();
+      if (hash === '#admin') {
+        setActiveView('admin');
+      } else if (hash === '#login') {
+        setAuthModalMode('login');
+        setActiveView('auth');
+      } else if (hash === '#signup') {
+        setAuthModalMode('signup');
+        setActiveView('auth');
+      } else if (hash === '#browse') {
+        setActiveView('browse');
+      } else if (hash === '#orders') {
+        setActiveView('orders');
+      } else if (hash === '#ai') {
+        setActiveView('ai');
+      }
+    };
+
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
 
   // Search & Category Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,6 +112,18 @@ export default function App() {
   const [activeChatOrderId, setActiveChatOrderId] = useState<string | null>(null);
   const [isPostServiceOpen, setIsPostServiceOpen] = useState(false);
   const [isPostRequestOpen, setIsPostRequestOpen] = useState(false);
+
+  // Admin order status update handler
+  const handleUpdateOrderStatus = (
+    orderId: string,
+    status: Order['status'],
+    escrowStatus: Order['escrowStatus']
+  ) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status, escrowStatus } : o))
+    );
+    showToast(`Order status updated to ${status}`);
+  };
 
   // Toast banner
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -129,7 +174,7 @@ export default function App() {
   const handleLogout = () => {
     saveAuthUser(null);
     setCurrentUser(null);
-    showToast('Signed out of NeighborLy');
+    showToast('Signed out of Neighborly');
   };
 
   const requireAuth = (mode: 'login' | 'signup' = 'login') => {
@@ -143,7 +188,7 @@ export default function App() {
       prev.map((s) => {
         if (s.id === serviceId) {
           const nextSaved = !s.saved;
-          showToast(nextSaved ? 'Saved to favorites' : 'Removed from favorites');
+          showToast(nextSaved ? 'Saved to your favorites' : 'Removed from favorites');
           return { ...s, saved: nextSaved };
         }
         return s;
@@ -151,231 +196,227 @@ export default function App() {
     );
   };
 
-  // Add a new Service
+  // Create Service Listing
   const handleAddService = (
-    data: Omit<ServiceListing, 'id' | 'provider' | 'providerId' | 'rating' | 'reviewCount'>
+    newServiceData: Omit<ServiceListing, 'id' | 'provider' | 'providerId' | 'rating' | 'reviewCount'>
   ) => {
-    if (!currentUser) {
-      requireAuth();
-      return;
-    }
+    if (!currentUser) return;
 
     const newService: ServiceListing = {
-      id: `svc_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      ...newServiceData,
+      id: `service_${Date.now()}`,
       providerId: currentUser.id,
-      provider: currentUser,
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      price: data.price,
-      rushPrice: data.rushPrice,
-      rushHours: data.rushHours,
-      deliveryDays: data.deliveryDays,
-      deliveryHours: data.deliveryHours,
-      revisions: data.revisions,
-      isUrgent: data.isUrgent,
+      provider: {
+        id: currentUser.id,
+        name: currentUser.name,
+        userId: currentUser.userId,
+        avatar: currentUser.avatar,
+        email: currentUser.email,
+        location: currentLocation,
+        verified: true,
+        tasksCompleted: currentUser.tasksCompleted || 0,
+        rating: 5.0,
+        reviewCount: 0,
+        skills: [newServiceData.category],
+        joinedDate: currentUser.joinedDate,
+        authProvider: currentUser.authProvider || 'google',
+      },
       rating: 5.0,
       reviewCount: 0,
-      coverGradient: data.coverGradient,
-      skills: data.skills,
-      location: data.location,
-      trsScore: 95,
+      saved: false,
     };
 
     setServices((prev) => [newService, ...prev]);
-    showToast('Service published to your neighborhood!');
-  };
-
-  // Post a Task Request
-  const handlePostRequest = (
-    data: Omit<
-      TaskRequest,
-      'id' | 'requesterId' | 'requesterName' | 'requesterAvatar' | 'requesterLocation' | 'status' | 'createdAt'
-    >
-  ) => {
-    if (!currentUser) {
-      requireAuth();
-      return;
-    }
-
-    const newReq: TaskRequest = {
-      id: `req_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-      requesterId: currentUser.id,
-      requesterName: currentUser.name,
-      requesterAvatar: currentUser.avatar,
-      requesterLocation: currentLocation,
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      budget: data.budget,
-      deadline: data.deadline,
-      isUrgent: data.isUrgent,
-      status: 'open',
-      createdAt: 'Just now',
-      filesAttached: data.filesAttached,
-    };
-
-    setRequests((prev) => [newReq, ...prev]);
-    showToast('Task posted! Nearby neighbors have been notified.');
+    showToast('Skill published successfully in your neighborhood!');
   };
 
   // Delete Service
   const handleDeleteService = (serviceId: string) => {
     setServices((prev) => prev.filter((s) => s.id !== serviceId));
-    showToast('Service removed.');
+    showToast('Service listing removed');
   };
 
-  // Request & Book a Service
+  // Create Task Request
+  const handlePostRequest = (
+    requestData: Omit<TaskRequest, 'id' | 'requesterId' | 'requesterName' | 'requesterAvatar' | 'requesterLocation' | 'status' | 'createdAt'>
+  ) => {
+    if (!currentUser) return;
+
+    const newReq: TaskRequest = {
+      ...requestData,
+      id: `req_${Date.now()}`,
+      requesterId: currentUser.id,
+      requesterName: currentUser.name,
+      requesterAvatar: currentUser.avatar,
+      requesterLocation: currentLocation,
+      status: 'open',
+      createdAt: 'Just now',
+    };
+
+    setRequests((prev) => [newReq, ...prev]);
+    showToast('Task request posted! Nearby neighbors have been notified.');
+  };
+
+  // Book Service (Create Escrow Order)
   const handleRequestOrder = (service: ServiceListing, withRush: boolean) => {
     if (!currentUser) {
-      requireAuth();
+      requireAuth('login');
       return;
     }
 
-    const orderPrice = withRush ? service.price + (service.rushPrice || 100) : service.price;
-    const newOrderId = `ord_${Math.floor(1000 + Math.random() * 9000)}`;
+    const orderAmount = withRush ? service.price + (service.rushPrice || 100) : service.price;
+    const orderId = `ord_${Date.now()}`;
 
     const newOrder: Order = {
-      id: newOrderId,
+      id: orderId,
       serviceId: service.id,
       serviceTitle: service.title,
-      category: service.category,
       buyerId: currentUser.id,
       buyerName: currentUser.name,
       buyerAvatar: currentUser.avatar,
       buyerLocation: currentLocation,
       sellerId: service.providerId,
-      sellerName: service.provider.name,
-      sellerAvatar: service.provider.avatar,
-      sellerLocation: service.location,
+      sellerName: service.provider?.name || 'Neighbor Provider',
+      sellerAvatar: service.provider?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+      sellerLocation: service.location || currentLocation,
       status: 'in_escrow',
-      amount: orderPrice,
-      rushDelivery: withRush,
-      createdAt: 'Just now',
-      deadline: withRush ? 'Within 4 hours' : `${service.deliveryDays} Day(s)`,
       escrowStatus: 'held',
-      deliveryFiles: [],
+      amount: orderAmount,
+      createdAt: 'Just now',
+      deadline: withRush ? 'Within 4 Hours' : `${service.deliveryDays || 1} Days`,
     };
 
-    setOrders((prev) => [newOrder, ...prev]);
-
-    // Initial greeting
-    const initialMsg: Message = {
+    const initialMessage: Message = {
       id: `msg_${Date.now()}`,
-      orderId: newOrderId,
+      orderId: orderId,
       senderId: currentUser.id,
       senderName: currentUser.name,
       senderAvatar: currentUser.avatar,
-      isSeller: false,
-      text: `Hi ${service.provider.name}! I booked your neighborhood service "${service.title}". ₹${orderPrice} is held safely in escrow. Looking forward to working together!`,
-      timestamp: 'Just now',
+      text: `Hello! I have booked your service "${service.title}". ₹${orderAmount} has been deposited into Escrow-Lite protection.`,
+      timestamp: new Date().toISOString(),
+      isSystem: true,
     };
-    setMessages((prev) => [...prev, initialMsg]);
 
+    setOrders((prev) => [newOrder, ...prev]);
+    setMessages((prev) => [...prev, initialMessage]);
     setSelectedService(null);
-    setActiveChatOrderId(newOrderId);
-    showToast(`Order created! ₹${orderPrice} held in Escrow-Lite.`);
+    setActiveChatOrderId(orderId);
+    showToast(`Order initiated! ₹${orderAmount} safely placed in escrow.`);
   };
 
-  // Send message
-  const handleSendMessage = (orderId: string, text: string) => {
+  // Chat message send
+  const handleSendMessage = (orderId: string, text: string, attachmentUrl?: string, attachmentName?: string) => {
     if (!currentUser) return;
+
     const newMsg: Message = {
       id: `msg_${Date.now()}`,
       orderId,
       senderId: currentUser.id,
       senderName: currentUser.name,
       senderAvatar: currentUser.avatar,
-      isSeller: false,
       text,
-      timestamp: 'Just now',
+      attachmentUrl,
+      attachmentName,
+      timestamp: new Date().toISOString(),
     };
+
     setMessages((prev) => [...prev, newMsg]);
   };
 
-  // Deliver Work
+  // Deliver work
   const handleDeliverWork = (orderId: string, fileName: string) => {
     setOrders((prev) =>
-      prev.map((ord) => {
-        if (ord.id === orderId) {
-          return {
-            ...ord,
-            status: 'delivered',
-            deliveryFiles: [...(ord.deliveryFiles || []), { name: fileName, size: '4.2 MB' }],
-          };
-        }
-        return ord;
-      })
+      prev.map((o) => (o.id === orderId ? { ...o, status: 'delivered' } : o))
     );
 
     if (currentUser) {
-      const msg: Message = {
+      const deliveryMsg: Message = {
         id: `msg_${Date.now()}`,
         orderId,
         senderId: currentUser.id,
         senderName: currentUser.name,
         senderAvatar: currentUser.avatar,
-        isSeller: true,
-        text: `Delivered files: ${fileName}. Please check and mark complete!`,
-        timestamp: 'Just now',
+        text: `I have completed the task and uploaded the work deliverable: "${fileName}". Please inspect and approve to release payment.`,
+        attachmentName: fileName,
+        timestamp: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => [...prev, deliveryMsg]);
     }
-    showToast('Work delivered to neighbor for approval.');
+
+    showToast('Task marked as delivered to client!');
   };
 
-  // Complete Order & Release Escrow
+  // Complete Order (Approve Escrow Release)
   const handleCompleteOrder = (orderId: string) => {
     setOrders((prev) =>
-      prev.map((ord) => {
-        if (ord.id === orderId) {
-          return {
-            ...ord,
-            status: 'completed',
-            escrowStatus: 'released',
-          };
-        }
-        return ord;
-      })
+      prev.map((o) =>
+        o.id === orderId
+          ? { ...o, status: 'completed', escrowStatus: 'released' }
+          : o
+      )
     );
-    showToast('Task marked Complete! Escrow funds released.');
+
+    if (currentUser) {
+      const sysMsg: Message = {
+        id: `msg_${Date.now()}`,
+        orderId,
+        senderId: 'system',
+        senderName: 'Neighborly Escrow',
+        senderAvatar: '',
+        text: `Escrow payment has been released to the provider! Thank you for supporting your neighbor.`,
+        timestamp: new Date().toISOString(),
+        isSystem: true,
+      };
+      setMessages((prev) => [...prev, sysMsg]);
+    }
+
+    showToast('Payment released to neighbor! Thank you.');
   };
 
   // Submit Review
   const handleSubmitReview = (orderId: string, rating: number, comment: string) => {
     setOrders((prev) =>
-      prev.map((ord) => {
-        if (ord.id === orderId) {
-          return {
-            ...ord,
-            review: {
-              rating,
-              comment,
-              createdAt: 'Just now',
-            },
-          };
-        }
-        return ord;
-      })
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              review: {
+                rating,
+                comment,
+                reviewerName: currentUser?.name || 'Neighbor',
+                createdAt: 'Just now',
+              },
+            }
+          : o
+      )
     );
-    showToast('Thank you! Your verified review has been posted.');
+    showToast('Review submitted! Thank you.');
   };
 
+  // Active Chat Order
   const activeOrder = orders.find((o) => o.id === activeChatOrderId);
   const activeOrderMessages = messages.filter((m) => m.orderId === activeChatOrderId);
 
+  // Count active orders for badge
+  const activeOrdersCount = orders.filter(
+    (o) =>
+      (o.buyerId === currentUser?.id || o.sellerId === currentUser?.id) &&
+      o.status !== 'completed' &&
+      o.status !== 'cancelled'
+  ).length;
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen bg-[#FAFAFA] text-zinc-950 flex flex-col font-sans selection:bg-zinc-950 selection:text-white pb-20 md:pb-0">
       
-      {/* Toast Notification */}
+      {/* Toast Notification with larger radius and soft shadow */}
       {toastMessage && (
-        <div className="fixed top-20 right-4 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-700 text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-          <Sparkles className="w-4 h-4 text-emerald-400" />
+        <div className="fixed top-20 right-4 z-50 bg-zinc-950 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-soft-xl flex items-center gap-2.5 animate-in slide-in-from-top-3 fade-in duration-200 border border-zinc-800">
+          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Navbar */}
+      {/* Top Navigation Bar */}
       <Navbar
         currentLocation={currentLocation}
         radiusKm={radiusKm}
@@ -384,7 +425,10 @@ export default function App() {
         activeView={activeView}
         onNavigate={(view) => setActiveView(view)}
         currentUser={currentUser}
-        onOpenAuth={(mode) => requireAuth(mode || 'login')}
+        onOpenAuth={(mode) => {
+          setAuthModalMode(mode || 'login');
+          setActiveView('auth');
+        }}
         onLogout={handleLogout}
         onOpenPostRequest={() => {
           if (!currentUser) requireAuth('signup');
@@ -394,13 +438,14 @@ export default function App() {
           if (!currentUser) requireAuth('signup');
           else setIsPostServiceOpen(true);
         }}
-        activeOrdersCount={orders.filter((o) => o.status !== 'completed').length}
+        onOpenAiAssistant={() => setIsAiModalOpen(true)}
+        activeOrdersCount={activeOrdersCount}
       />
 
-      {/* Main View Container */}
+      {/* Main View Router */}
       <main className="flex-1">
         {activeView === 'home' && (
-          <div>
+          <>
             <LandingHero
               onSearch={(query) => {
                 setSearchQuery(query);
@@ -426,25 +471,26 @@ export default function App() {
               }}
             />
 
-            {/* Embedded Live Nearby Services Strip */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-              <div className="flex items-center justify-between mb-6">
+            {/* Quick Service Highlights on Home */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-6">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-heading font-black text-slate-900 tracking-tight">
-                    Skills & Services in {currentLocation.neighborhood}
+                  <h2 className="text-xl sm:text-2xl font-heading font-extrabold text-zinc-950">
+                    Nearby in {currentLocation.neighborhood}
                   </h2>
-                  <p className="text-xs text-slate-500">
-                    Discovered within {radiusKm} km of your location
+                  <p className="text-xs sm:text-sm text-zinc-500 mt-0.5">
+                    Skills offered within {radiusKm}km of your location
                   </p>
                 </div>
                 <button
                   onClick={() => setActiveView('browse')}
-                  className="text-xs font-bold text-emerald-700 hover:text-emerald-800"
+                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
                 >
-                  Explore All →
+                  View All Services →
                 </button>
               </div>
 
+              {/* Browse Services Component in Highlights Mode */}
               <BrowseServices
                 services={services}
                 currentLocation={currentLocation}
@@ -453,7 +499,7 @@ export default function App() {
                 isWorkFromCurrentLocation={isWorkFromCurrentLocation}
                 onToggleWorkFromCurrentLocation={setIsWorkFromCurrentLocation}
                 onOpenLocationPicker={() => setIsLocationPickerOpen(true)}
-                onSelectService={(svc) => setSelectedService(svc)}
+                onSelectService={(s) => setSelectedService(s)}
                 onToggleSaveService={handleToggleSaveService}
                 selectedCategory={selectedCategory}
                 onCategoryChange={setSelectedCategory}
@@ -469,7 +515,7 @@ export default function App() {
                 }}
               />
             </div>
-          </div>
+          </>
         )}
 
         {activeView === 'browse' && (
@@ -481,7 +527,7 @@ export default function App() {
             isWorkFromCurrentLocation={isWorkFromCurrentLocation}
             onToggleWorkFromCurrentLocation={setIsWorkFromCurrentLocation}
             onOpenLocationPicker={() => setIsLocationPickerOpen(true)}
-            onSelectService={(svc) => setSelectedService(svc)}
+            onSelectService={(s) => setSelectedService(s)}
             onToggleSaveService={handleToggleSaveService}
             selectedCategory={selectedCategory}
             onCategoryChange={setSelectedCategory}
@@ -498,23 +544,182 @@ export default function App() {
           />
         )}
 
-        {activeView === 'orders' && (
+        {activeView === 'orders' && currentUser && (
           <MyTasksOrdersView
-            currentUser={currentUser || ({} as UserProfile)}
+            currentUser={currentUser}
             orders={orders}
             services={services}
             requests={requests}
-            onOpenOrderChat={(orderId) => setActiveChatOrderId(orderId)}
+            onOpenOrderChat={(id) => setActiveChatOrderId(id)}
             onOpenPostService={() => setIsPostServiceOpen(true)}
             onOpenPostRequest={() => setIsPostRequestOpen(true)}
             onDeleteService={handleDeleteService}
           />
         )}
+
+        {activeView === 'ai' && (
+          <AiAssistantModal
+            isEmbedded={true}
+            currentLocation={currentLocation}
+            services={services}
+            requests={requests}
+            currentUser={currentUser}
+            onSelectService={(s) => setSelectedService(s)}
+            onOpenPostRequest={() => {
+              if (!currentUser) requireAuth('signup');
+              else setIsPostRequestOpen(true);
+            }}
+            onOpenPostService={() => {
+              if (!currentUser) requireAuth('signup');
+              else setIsPostServiceOpen(true);
+            }}
+          />
+        )}
+
+        {activeView === 'admin' && (
+          <AdminDashboard
+            services={services}
+            requests={requests}
+            orders={orders}
+            currentLocation={currentLocation}
+            currentUser={currentUser}
+            onDeleteService={handleDeleteService}
+            onUpdateOrderStatus={handleUpdateOrderStatus}
+            onOpenOrderChat={(id) => setActiveChatOrderId(id)}
+            onNavigateHome={() => setActiveView('home')}
+          />
+        )}
+
+        {activeView === 'auth' && (
+          <AuthModal
+            isEmbeddedPage={true}
+            onClose={() => setActiveView('home')}
+            onSuccess={(user) => {
+              handleAuthSuccess(user);
+              setActiveView('home');
+            }}
+            currentLocation={currentLocation}
+            initialMode={authModalMode}
+          />
+        )}
       </main>
 
-      {/* Modals */}
+      {/* Floating AI Assistant Trigger Button (Always available in bottom right) */}
+      <button
+        onClick={() => setIsAiModalOpen(true)}
+        className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl p-3 sm:px-4 sm:py-3 shadow-soft-xl border border-zinc-700/80 flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 cursor-pointer group"
+        title="Open Neighborly AI Assistant"
+      >
+        <div className="w-6 h-6 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0">
+          <Sparkles className="w-3.5 h-3.5" />
+        </div>
+        <div className="hidden sm:flex flex-col text-left">
+          <span className="text-xs font-bold leading-tight flex items-center gap-1.5">
+            <span>AI Assistant</span>
+            <span className="text-[9px] bg-indigo-500/30 text-indigo-300 font-extrabold px-1.5 py-0.2 rounded">Gemini</span>
+          </span>
+          <span className="text-[10px] text-zinc-400">Ask rates & match skills</span>
+        </div>
+      </button>
 
-      {/* 1. Auth Modal (Google Auth, UserID/Email and Password Login, Password Reset) */}
+      {/* Floating AI Assistant Modal */}
+      {isAiModalOpen && (
+        <AiAssistantModal
+          isOpen={isAiModalOpen}
+          onClose={() => setIsAiModalOpen(false)}
+          currentLocation={currentLocation}
+          services={services}
+          requests={requests}
+          currentUser={currentUser}
+          onSelectService={(s) => {
+            setSelectedService(s);
+            setIsAiModalOpen(false);
+          }}
+          onOpenPostRequest={() => {
+            setIsAiModalOpen(false);
+            if (!currentUser) requireAuth('signup');
+            else setIsPostRequestOpen(true);
+          }}
+          onOpenPostService={() => {
+            setIsAiModalOpen(false);
+            if (!currentUser) requireAuth('signup');
+            else setIsPostServiceOpen(true);
+          }}
+        />
+      )}
+
+      {/* Mobile Persistent Bottom Navigation Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-zinc-200/80 shadow-soft-lg md:hidden">
+        <div className="flex items-center justify-around h-16 px-2">
+          
+          <button
+            onClick={() => setActiveView('home')}
+            className={`flex flex-col items-center justify-center flex-1 h-full cursor-pointer transition-colors ${
+              activeView === 'home' ? 'text-zinc-950 font-bold' : 'text-zinc-500'
+            }`}
+          >
+            <Home className="w-5 h-5 mb-1" />
+            <span className="text-[10px]">Home</span>
+          </button>
+
+          <button
+            onClick={() => setActiveView('browse')}
+            className={`flex flex-col items-center justify-center flex-1 h-full cursor-pointer transition-colors ${
+              activeView === 'browse' ? 'text-zinc-950 font-bold' : 'text-zinc-500'
+            }`}
+          >
+            <Compass className="w-5 h-5 mb-1" />
+            <span className="text-[10px]">Explore</span>
+          </button>
+
+          {/* Quick Post Center Button */}
+          <button
+            onClick={() => {
+              if (!currentUser) requireAuth('signup');
+              else setIsPostRequestOpen(true);
+            }}
+            className="flex flex-col items-center justify-center -mt-5 cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-full bg-zinc-950 text-white flex items-center justify-center shadow-soft-lg hover:scale-105 transition-transform">
+              <Plus className="w-6 h-6" />
+            </div>
+            <span className="text-[10px] font-bold text-zinc-900 mt-1">Post</span>
+          </button>
+
+          <button
+            onClick={() => setActiveView('ai')}
+            className={`flex flex-col items-center justify-center flex-1 h-full cursor-pointer transition-colors ${
+              activeView === 'ai' ? 'text-indigo-600 font-bold' : 'text-zinc-500'
+            }`}
+          >
+            <Sparkles className="w-5 h-5 mb-1 text-indigo-600" />
+            <span className="text-[10px]">AI Match</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (!currentUser) requireAuth('login');
+              else setActiveView('orders');
+            }}
+            className={`flex flex-col items-center justify-center flex-1 h-full cursor-pointer relative transition-colors ${
+              activeView === 'orders' ? 'text-zinc-950 font-bold' : 'text-zinc-500'
+            }`}
+          >
+            <div className="relative">
+              <MessageSquare className="w-5 h-5 mb-1" />
+              {activeOrdersCount > 0 && (
+                <span className="absolute -top-1 -right-2 bg-zinc-950 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {activeOrdersCount}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px]">Tasks</span>
+          </button>
+
+        </div>
+      </div>
+
+      {/* Modals & Dialogs */}
       {isAuthModalOpen && (
         <AuthModal
           onClose={() => setIsAuthModalOpen(false)}
@@ -524,7 +729,6 @@ export default function App() {
         />
       )}
 
-      {/* 2. Location Picker Modal ("Select work from my current location") */}
       {isLocationPickerOpen && (
         <LocationPickerModal
           currentLocation={currentLocation}
@@ -540,7 +744,6 @@ export default function App() {
         />
       )}
 
-      {/* 3. Offer a Skill / Post Service Modal */}
       {isPostServiceOpen && (
         <PostServiceModal
           onClose={() => setIsPostServiceOpen(false)}
@@ -551,7 +754,6 @@ export default function App() {
         />
       )}
 
-      {/* 4. Post a Task Request Modal */}
       {isPostRequestOpen && (
         <PostRequestModal
           onClose={() => setIsPostRequestOpen(false)}
@@ -562,7 +764,6 @@ export default function App() {
         />
       )}
 
-      {/* 5. Service Detail Modal */}
       {selectedService && (
         <GigDetailModal
           service={selectedService}
@@ -575,7 +776,6 @@ export default function App() {
         />
       )}
 
-      {/* 6. Chat / Order Thread Modal */}
       {activeChatOrderId && activeOrder && currentUser && (
         <ChatOrderModal
           order={activeOrder}
@@ -589,73 +789,67 @@ export default function App() {
         />
       )}
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 mt-16 py-12 text-slate-500 text-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-4 gap-8">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-heading font-black">
-                N
-              </div>
-              <span className="text-base font-heading font-black text-slate-900">
-                Neighbor<span className="text-emerald-600">Ly</span>
-              </span>
-            </div>
-            <p className="text-slate-500 leading-relaxed">
+      {/* Clean Minimalist Footer with generous vertical spacing and radii */}
+      <footer className="bg-white border-t border-zinc-200/80 mt-16 sm:mt-24 py-14 sm:py-16 text-zinc-500 text-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-4 gap-10">
+          <div className="space-y-4">
+            <NeighborLyLogo size="md" showTagline={true} tagline="Local Skills · Real Opportunities" />
+            <p className="text-zinc-500 leading-relaxed text-xs">
               Hyperlocal neighborhood skills & task marketplace. Connect with nearby neighbors to get help affordably and reliably.
             </p>
-            <div className="flex items-center gap-2 text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 w-fit">
-              <Lock className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-2 text-xs text-zinc-700 bg-zinc-100/80 px-3 py-1.5 rounded-xl border border-zinc-200/70 w-fit font-medium">
+              <Lock className="w-3.5 h-3.5 text-zinc-600" />
               <span>Escrow-Lite Protected</span>
             </div>
           </div>
 
           <div>
-            <h4 className="font-heading font-bold text-slate-900 mb-3 uppercase tracking-wider text-[11px]">Popular Skills</h4>
-            <ul className="space-y-2">
-              <li><button onClick={() => { setSelectedCategory('Home & Repairs'); setActiveView('browse'); }} className="hover:text-emerald-700 cursor-pointer">Home Repairs & Assembly</button></li>
-              <li><button onClick={() => { setSelectedCategory('Tech & Digital'); setActiveView('browse'); }} className="hover:text-emerald-700 cursor-pointer">PC, Wi-Fi & Tech Setup</button></li>
-              <li><button onClick={() => { setSelectedCategory('Creative & Design'); setActiveView('browse'); }} className="hover:text-emerald-700 cursor-pointer">Presentations & Creative Work</button></li>
-              <li><button onClick={() => { setSelectedCategory('Lessons & Tutoring'); setActiveView('browse'); }} className="hover:text-emerald-700 cursor-pointer">Neighborhood Tutoring</button></li>
+            <h4 className="font-bold text-zinc-950 mb-3.5 uppercase tracking-wider text-[11px]">Popular Skills</h4>
+            <ul className="space-y-2.5">
+              <li><button onClick={() => { setSelectedCategory('Home & Repairs'); setActiveView('browse'); }} className="hover:text-zinc-950 cursor-pointer">Home Repairs & Assembly</button></li>
+              <li><button onClick={() => { setSelectedCategory('Tech & Digital'); setActiveView('browse'); }} className="hover:text-zinc-950 cursor-pointer">PC, Wi-Fi & Tech Setup</button></li>
+              <li><button onClick={() => { setSelectedCategory('Creative & Design'); setActiveView('browse'); }} className="hover:text-zinc-950 cursor-pointer">Design & Presentations</button></li>
+              <li><button onClick={() => { setSelectedCategory('Lessons & Tutoring'); setActiveView('browse'); }} className="hover:text-zinc-950 cursor-pointer">Neighborhood Tutoring</button></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-heading font-bold text-slate-900 mb-3 uppercase tracking-wider text-[11px]">Trust & Neighborhood Safety</h4>
-            <ul className="space-y-2">
-              <li><button onClick={() => requireAuth('signup')} className="hover:text-emerald-700 cursor-pointer">Google & Email Verification</button></li>
-              <li><button onClick={() => setIsLocationPickerOpen(true)} className="hover:text-emerald-700 cursor-pointer">Work From Current Location</button></li>
-              <li><button onClick={() => showToast('Escrow-Lite holds funds until you confirm satisfaction.')} className="hover:text-emerald-700 cursor-pointer">Escrow Payment Protection</button></li>
+            <h4 className="font-bold text-zinc-950 mb-3.5 uppercase tracking-wider text-[11px]">Safety & Trust</h4>
+            <ul className="space-y-2.5">
+              <li><button onClick={() => { setAuthModalMode('signup'); setActiveView('auth'); }} className="hover:text-zinc-950 cursor-pointer">Google & Email Verification</button></li>
+              <li><button onClick={() => setIsLocationPickerOpen(true)} className="hover:text-zinc-950 cursor-pointer">Work From Current Location</button></li>
+              <li><button onClick={() => showToast('Escrow holds payment until you approve the task.')} className="hover:text-zinc-950 cursor-pointer">Escrow Payment Protection</button></li>
+              <li><button onClick={() => setActiveView('admin')} className="hover:text-blue-600 font-semibold cursor-pointer flex items-center gap-1"><span>Admin Command Portal</span> →</button></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-heading font-bold text-slate-900 mb-3 uppercase tracking-wider text-[11px]">Your Current Location</h4>
-            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5">
-              <p className="font-bold text-slate-900 flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+            <h4 className="font-bold text-zinc-950 mb-3.5 uppercase tracking-wider text-[11px]">Current Location</h4>
+            <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200/90 shadow-2xs space-y-1.5">
+              <p className="font-bold text-zinc-950 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-blue-600" />
                 <span>{currentLocation.neighborhood}</span>
               </p>
-              <p className="text-[11px] text-slate-500">{currentLocation.city}, {currentLocation.state || 'India'}</p>
-              <p className="text-[10px] text-emerald-700 font-bold">Search radius: within {radiusKm} km</p>
+              <p className="text-xs text-zinc-500">{currentLocation.city}, {currentLocation.state || 'India'}</p>
+              <p className="text-[11px] text-zinc-600 font-medium">Search radius: within {radiusKm} km</p>
               <button
                 onClick={() => setIsLocationPickerOpen(true)}
-                className="text-xs text-emerald-700 font-bold hover:underline block pt-1 cursor-pointer"
+                className="text-xs text-blue-600 font-bold hover:underline block pt-1.5 cursor-pointer"
               >
-                Change or Detect GPS Location →
+                Change or Detect GPS →
               </button>
             </div>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 mt-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 NeighborLy. Built for neighbors to help neighbors.</p>
-          <div className="flex items-center gap-4 text-[11px]">
-            <span>Privacy Policy</span>
-            <span>•</span>
-            <span>Terms of Service</span>
-            <span>•</span>
-            <span>Community Guidelines</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 mt-10 border-t border-zinc-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-zinc-400">
+          <p>© 2026 Neighborly. Built for neighbors to help neighbors.</p>
+          <div className="flex items-center gap-4 text-xs">
+            <span>Privacy</span>
+            <span>·</span>
+            <span>Terms</span>
+            <span>·</span>
+            <span>Guidelines</span>
           </div>
         </div>
       </footer>
