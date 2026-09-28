@@ -39,6 +39,7 @@ import { MyTasksOrdersView } from './components/MyTasksOrdersView';
 import { AiAssistantModal } from './components/AiAssistantModal';
 import { AiChatbotWidget } from './components/AiChatbotWidget';
 import { AdminDashboard } from './components/AdminDashboard';
+import { UserProfileModal } from './components/UserProfileModal';
 import { NeighborLyLogo } from './components/NeighborLyLogo';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { getAdminSession } from './utils/adminAuth';
@@ -121,6 +122,20 @@ export default function App() {
   const [activeChatOrderId, setActiveChatOrderId] = useState<string | null>(null);
   const [isPostServiceOpen, setIsPostServiceOpen] = useState(false);
   const [isPostRequestOpen, setIsPostRequestOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [inspectedUser, setInspectedUser] = useState<UserProfile | null>(null);
+
+  const handleOpenProfile = (userToInspect?: UserProfile) => {
+    setInspectedUser(userToInspect || currentUser);
+    setIsProfileModalOpen(true);
+  };
+
+  const handleUpdateUserProfile = (updatedUser: UserProfile) => {
+    setCurrentUser(updatedUser);
+    saveAuthUser(updatedUser);
+    setInspectedUser(updatedUser);
+    showToast('Trust Profile credentials updated successfully!');
+  };
 
   // Admin order status update handler
   const handleUpdateOrderStatus = (
@@ -490,13 +505,13 @@ export default function App() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-zinc-950 flex flex-col font-sans selection:bg-zinc-950 selection:text-white pb-20 md:pb-0">
+    <div className="min-h-screen bg-[#FAFAFA] text-zinc-950 flex flex-col font-sans selection:bg-zinc-950 selection:text-white pb-20 md:pb-0 w-full max-w-full overflow-x-hidden relative">
       
       {/* Toast Notification with larger radius and soft shadow */}
       {toastMessage && (
-        <div className="fixed top-20 right-4 z-50 bg-zinc-950 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-soft-xl flex items-center gap-2.5 animate-in slide-in-from-top-3 fade-in duration-200 border border-zinc-800">
+        <div className="fixed top-20 right-4 z-50 bg-zinc-950 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-soft-xl flex items-center gap-2.5 animate-in slide-in-from-top-3 fade-in duration-200 border border-zinc-800 max-w-[calc(100vw-2rem)]">
           <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
+          <span className="truncate">{toastMessage}</span>
         </div>
       )}
 
@@ -523,11 +538,12 @@ export default function App() {
           else setIsPostServiceOpen(true);
         }}
         onOpenAiAssistant={() => setIsChatbotOpen(true)}
+        onOpenProfile={() => handleOpenProfile()}
         activeOrdersCount={activeOrdersCount}
       />
 
       {/* Main View Router */}
-      <main className="flex-1">
+      <main className="flex-1 w-full max-w-full overflow-x-hidden">
         {activeView === 'home' && (
           <>
             <LandingHero
@@ -853,6 +869,17 @@ export default function App() {
           onCompleteOrder={handleCompleteOrder}
           onSubmitReview={handleSubmitReview}
           onClose={() => setActiveChatOrderId(null)}
+        />
+      )}
+
+      {/* User Trust Profile & Verification Modal */}
+      {isProfileModalOpen && (inspectedUser || currentUser) && (
+        <UserProfileModal
+          user={inspectedUser || currentUser!}
+          isOpen={isProfileModalOpen}
+          isCurrentUser={currentUser?.id === (inspectedUser?.id || currentUser?.id)}
+          onClose={() => setIsProfileModalOpen(false)}
+          onUpdateUser={handleUpdateUserProfile}
         />
       )}
 

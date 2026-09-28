@@ -104,42 +104,39 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   ];
 
   return (
-    <div className="relative border-b border-zinc-200/70 bg-gradient-to-b from-white via-zinc-50/50 to-white py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
-      {/* Modern Premium Ambient Background Aurora & Luminous "N" Watermark (Inspired by Image 1 Item 1) */}
+    <div className="relative border-b border-zinc-200/70 bg-gradient-to-b from-white via-zinc-50/50 to-white py-8 sm:py-16 md:py-20 lg:py-24 overflow-hidden w-full max-w-full">
+      {/* Modern Premium Ambient Background Aurora & Luminous "N" Watermark */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-        <div className="absolute -top-36 -left-36 w-[450px] h-[450px] bg-cyan-400/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/4 -right-36 w-[550px] h-[550px] bg-purple-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 left-1/3 w-[650px] h-[350px] bg-blue-500/8 rounded-full blur-3xl" />
+        <div className="absolute -top-36 -left-36 w-[350px] sm:w-[450px] h-[350px] sm:h-[450px] bg-cyan-400/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -right-36 w-[350px] sm:w-[550px] h-[350px] sm:h-[550px] bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-24 left-1/3 w-[450px] sm:w-[650px] h-[250px] sm:h-[350px] bg-blue-500/8 rounded-full blur-3xl" />
         
         {/* Subtle Giant Floating "N" Watermark in Background */}
-        <div className="absolute -right-12 top-8 opacity-[0.035] text-purple-900 pointer-events-none rotate-6 scale-150">
-          <NeighborLyLogo size="2xl" variant="watermark" />
-        </div>
-        <div className="absolute -left-16 bottom-8 opacity-[0.025] text-cyan-900 pointer-events-none -rotate-12 scale-125">
+        <div className="absolute -right-12 top-8 opacity-[0.035] text-purple-900 pointer-events-none rotate-6 scale-125 sm:scale-150">
           <NeighborLyLogo size="2xl" variant="watermark" />
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 relative z-10 w-full">
         
         {/* Main Hero Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
           
           {/* Left Column: Headline, Search, Value Badges */}
-          <div className="lg:col-span-7 space-y-6 sm:space-y-8">
+          <div className="lg:col-span-7 space-y-5 sm:space-y-8">
             
             {/* Top Brand & Location context */}
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <NeighborLyLogo variant="badge" />
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100/90 text-zinc-700 text-xs font-medium border border-zinc-200/80 shadow-2xs">
-                <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>Near <strong>{currentLocation.neighborhood || currentLocation.city}</strong></span>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-100/90 text-zinc-700 text-[11px] sm:text-xs font-medium border border-zinc-200/80 shadow-2xs max-w-full truncate">
+                <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 shrink-0" />
+                <span className="truncate">Near <strong>{currentLocation.neighborhood || currentLocation.city}</strong></span>
                 <span className="text-zinc-300">·</span>
-                <span className="text-zinc-600 font-semibold">{radiusKm}km</span>
+                <span className="text-zinc-600 font-semibold shrink-0">{radiusKm}km</span>
                 <button
                   type="button"
                   onClick={onOpenLocationPicker}
-                  className="text-blue-600 hover:text-blue-700 font-semibold text-xs ml-0.5 cursor-pointer hover:underline"
+                  className="text-blue-600 hover:text-blue-700 font-semibold text-[11px] sm:text-xs ml-0.5 cursor-pointer hover:underline shrink-0"
                 >
                   Change
                 </button>
@@ -147,53 +144,53 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
             </div>
 
             {/* Clean headline with generous vertical breathing room */}
-            <div className="space-y-4">
-              <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-heading font-extrabold tracking-tight text-zinc-950 leading-[1.1] text-balance">
+            <div className="space-y-3 sm:space-y-4">
+              <h1 className="text-2xl xs:text-3xl sm:text-5xl lg:text-6xl font-heading font-extrabold tracking-tight text-zinc-950 leading-[1.15] sm:leading-[1.1] break-words">
                 Neighborhood skills, <br />
                 <span className="text-zinc-900">right on your street.</span>
               </h1>
-              <p className="text-sm sm:text-base lg:text-lg text-zinc-600 font-normal max-w-xl leading-relaxed">
+              <p className="text-xs sm:text-base lg:text-lg text-zinc-600 font-normal max-w-xl leading-relaxed">
                 Connect directly with trusted neighbors for home repairs, tech setup, pet care, tutoring, and daily tasks. Verified local profiles with escrow protection.
               </p>
             </div>
 
             {/* Search Bar with larger radii and soft depth */}
-            <form onSubmit={handleSearchSubmit} className="max-w-xl">
-              <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white rounded-2xl sm:rounded-3xl shadow-soft hover:shadow-soft-md border border-zinc-300/90 focus-within:border-zinc-950 focus-within:ring-2 focus-within:ring-zinc-950/10 transition-all p-1.5 sm:p-2 gap-2">
-                <div className="flex items-center flex-1 px-2.5 py-1 sm:py-0">
-                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-400 mr-2.5 shrink-0" />
+            <form onSubmit={handleSearchSubmit} className="max-w-xl w-full">
+              <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-white rounded-2xl sm:rounded-3xl shadow-soft hover:shadow-soft-md border border-zinc-300/90 focus-within:border-zinc-950 focus-within:ring-2 focus-within:ring-zinc-950/10 transition-all p-1 sm:p-2 gap-1.5 sm:gap-2">
+                <div className="flex items-center flex-1 px-2.5 py-1.5 sm:py-0">
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-400 mr-2 shrink-0" />
                   <input
                     type="text"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="What do you need help with? (e.g. Wi-Fi setup, painting, plumbing)"
-                    className="w-full text-xs sm:text-sm text-zinc-900 placeholder:text-zinc-400 bg-transparent focus:outline-none min-h-[40px]"
+                    placeholder="What do you need help with? (e.g. Wi-Fi setup, painting)"
+                    className="w-full text-xs sm:text-sm text-zinc-900 placeholder:text-zinc-400 bg-transparent focus:outline-none min-h-[36px] sm:min-h-[40px]"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="px-5 py-3 sm:py-3.5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-soft flex items-center justify-center gap-2 shrink-0 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
+                  className="px-4 sm:px-5 py-2.5 sm:py-3.5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold transition-all shadow-soft flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                 >
                   <span>Find Help</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             </form>
 
             {/* Quick Actions & GPS */}
-            <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 pt-1 text-xs">
               <button
                 type="button"
                 onClick={onDetectLocation}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 font-medium transition-all shadow-2xs hover:shadow-soft-xs cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 font-medium transition-all shadow-2xs hover:shadow-soft-xs cursor-pointer w-full sm:w-auto text-xs"
               >
-                <Navigation className="w-3.5 h-3.5 text-blue-600" />
+                <Navigation className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                 <span>Use Current GPS Location</span>
               </button>
               <button
                 type="button"
                 onClick={onPostRequest}
-                className="inline-flex items-center gap-1.5 text-zinc-600 hover:text-zinc-950 font-medium transition-colors cursor-pointer py-1"
+                className="inline-flex items-center gap-1.5 text-zinc-600 hover:text-zinc-950 font-medium transition-colors cursor-pointer py-1 text-xs"
               >
                 <span>Need something done urgently?</span>
                 <span className="font-semibold text-blue-600 hover:underline">Post a task request →</span>
@@ -201,18 +198,18 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
             </div>
 
             {/* 3 Clean Trust Points (Unboxed metadata style) */}
-            <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 xs:gap-4 pt-6 border-t border-zinc-100 max-w-xl">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-4 sm:pt-6 border-t border-zinc-100 max-w-xl">
               <div>
-                <p className="text-xs sm:text-sm font-bold text-zinc-950">Hyperlocal</p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">Under {radiusKm}km radius</p>
+                <p className="text-[11px] sm:text-sm font-bold text-zinc-950">Hyperlocal</p>
+                <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5">Under {radiusKm}km radius</p>
               </div>
               <div>
-                <p className="text-xs sm:text-sm font-bold text-zinc-950">Escrow Protected</p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">Pay only when satisfied</p>
+                <p className="text-[11px] sm:text-sm font-bold text-zinc-950">Escrow Protected</p>
+                <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5">Pay when satisfied</p>
               </div>
               <div>
-                <p className="text-xs sm:text-sm font-bold text-zinc-950">Zero Agency Fees</p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">Direct neighbor rates</p>
+                <p className="text-[11px] sm:text-sm font-bold text-zinc-950">Zero Agency Fees</p>
+                <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5">Direct rates</p>
               </div>
             </div>
 

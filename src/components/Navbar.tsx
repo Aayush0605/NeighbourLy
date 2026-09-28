@@ -48,38 +48,44 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenPostRequest,
   onOpenPostService,
   onOpenAiAssistant,
+  onOpenProfile,
   activeOrdersCount,
 }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200/80 shadow-soft-xs">
-      <div className="max-w-7xl mx-auto px-2.5 xs:px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-1.5 xs:gap-2 sm:gap-4">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200/80 shadow-soft-xs w-full max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-1 sm:gap-4">
         
         {/* Left Section: Brand Logo & Hyperlocal Chip */}
-        <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-3 shrink-0 min-w-0">
           <button 
             onClick={() => onNavigate('home')} 
             className="flex items-center group text-left cursor-pointer focus-visible:outline-none shrink-0"
             aria-label="NeighborLy Home"
           >
-            <NeighborLyLogo size="md" />
+            <div className="hidden sm:block">
+              <NeighborLyLogo size="md" />
+            </div>
+            <div className="sm:hidden">
+              <NeighborLyLogo size="sm" />
+            </div>
           </button>
 
-          {/* Hyperlocal Location Chip - Always strictly single line, no wrapping */}
+          {/* Hyperlocal Location Chip - Responsive and truncated */}
           <button
             onClick={onOpenLocationPicker}
-            className="flex items-center gap-1 xs:gap-1.5 px-2 xs:px-2.5 sm:px-3 py-1.5 bg-zinc-50 hover:bg-zinc-100 rounded-xl text-xs font-semibold text-zinc-700 transition-all border border-zinc-200/90 shadow-2xs cursor-pointer shrink-0 whitespace-nowrap min-h-[36px]"
+            className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 bg-zinc-50 hover:bg-zinc-100 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-semibold text-zinc-700 transition-all border border-zinc-200/90 shadow-2xs cursor-pointer shrink-0 whitespace-nowrap min-h-[32px] sm:min-h-[36px]"
             title="Change Location or Set Radius"
           >
-            <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <span className="max-w-[70px] xs:max-w-[110px] sm:max-w-[150px] md:max-w-[170px] truncate">
+            <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 shrink-0" />
+            <span className="max-w-[55px] xs:max-w-[85px] sm:max-w-[140px] md:max-w-[170px] truncate">
               {currentLocation.neighborhood || currentLocation.city}
             </span>
-            <span className="text-[10px] text-zinc-600 font-bold bg-zinc-200/80 px-1.5 py-0.2 rounded-md hidden xs:inline shrink-0">
+            <span className="text-[9px] sm:text-[10px] text-zinc-600 font-bold bg-zinc-200/80 px-1 py-0.2 rounded-md hidden xs:inline shrink-0">
               {radiusKm}km
             </span>
-            <ChevronDown className="w-3 h-3 text-zinc-400 shrink-0" />
+            <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-zinc-400 shrink-0" />
           </button>
         </div>
 
@@ -150,7 +156,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Right Section: Action Buttons & Authentication */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           
           {/* Offer a Skill (Compact, strictly single-line) */}
           <button
@@ -164,9 +170,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Post a Task Button (High Contrast, single-line, fluid text on small screens) */}
           <button
             onClick={onOpenPostRequest}
-            className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 xs:px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-zinc-950 hover:bg-zinc-800 rounded-xl transition-all shadow-soft hover:shadow-soft-md cursor-pointer whitespace-nowrap shrink-0 min-h-[36px]"
+            className="inline-flex items-center gap-1 px-2 xs:px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] xs:text-xs sm:text-sm font-semibold text-white bg-zinc-950 hover:bg-zinc-800 rounded-lg sm:rounded-xl transition-all shadow-soft hover:shadow-soft-md cursor-pointer whitespace-nowrap shrink-0 min-h-[32px] sm:min-h-[36px]"
           >
-            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <Plus className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
             <span className="hidden xs:inline">Post Task</span>
             <span className="xs:hidden">Post</span>
           </button>
@@ -176,24 +182,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="relative shrink-0">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-1.5 p-1 sm:p-1.5 pl-1.5 pr-2 sm:pr-2.5 rounded-full hover:bg-zinc-100/90 border border-zinc-200/90 transition-all cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
+                className="flex items-center gap-1 p-1 sm:p-1.5 sm:pl-1.5 sm:pr-2.5 rounded-full hover:bg-zinc-100/90 border border-zinc-200/90 transition-all cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
               >
                 <img
                   src={currentUser.avatar}
                   alt={currentUser.name}
                   referrerPolicy="no-referrer"
-                  className="w-7 h-7 rounded-full object-cover ring-1 ring-zinc-300 shrink-0"
+                  className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-zinc-300 shrink-0"
                 />
-                <span className="text-xs font-semibold text-zinc-800 hidden sm:inline max-w-[80px] truncate">
+                <span className="text-xs font-semibold text-zinc-800 hidden md:inline max-w-[80px] truncate">
                   {currentUser.name.split(' ')[0]}
                 </span>
-                <TrustBadge user={currentUser} variant="compact" />
-                <ChevronDown className="w-3 h-3 text-zinc-400 shrink-0 ml-0.5" />
+                <div className="hidden sm:block">
+                  <TrustBadge user={currentUser} variant="compact" />
+                </div>
+                <div className="sm:hidden text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1 rounded-md border border-emerald-200/80">
+                  {currentUser.trustScore || 70}
+                </div>
+                <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-zinc-400 shrink-0" />
               </button>
 
               {isUserMenuOpen && (
                 <div 
-                  className="absolute right-0 mt-2.5 w-64 bg-white rounded-2xl shadow-soft-xl border border-zinc-200/80 py-2 z-50 animate-in fade-in zoom-in-95 duration-150"
+                  className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-soft-xl border border-zinc-200/80 py-2 z-50 animate-in fade-in zoom-in-95 duration-150"
                   onClick={() => setIsUserMenuOpen(false)}
                 >
                   <div className="px-4 py-3 border-b border-zinc-100">

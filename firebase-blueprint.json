@@ -1,0 +1,143 @@
+{
+  "entities": {
+    "userProfile": {
+      "title": "UserProfile",
+      "description": "User profile with neighborhood trust metrics, credentials, and verification status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 200 },
+        "avatar": { "type": "string", "maxLength": 500 },
+        "trustScore": { "type": "number" },
+        "verificationTier": { "type": "string", "enum": ["top_neighbor", "trusted", "verified", "new_member"] },
+        "trustBadges": { "type": "array" },
+        "idVerified": { "type": "boolean" },
+        "studentVerified": { "type": "boolean" },
+        "phoneVerified": { "type": "boolean" },
+        "emailVerified": { "type": "boolean" },
+        "completedTasks": { "type": "number" },
+        "disputeFreeRate": { "type": "number" },
+        "onTimeDeliveryRate": { "type": "number" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "neighborhood": { "type": "string", "maxLength": 150 },
+        "collegeName": { "type": "string", "maxLength": 150 },
+        "joinedAt": { "type": "string", "maxLength": 64 },
+        "role": { "type": "string", "enum": ["user", "admin"] }
+      },
+      "required": ["id", "name", "email", "trustScore"]
+    },
+    "serviceListing": {
+      "title": "ServiceListing",
+      "description": "Hyperlocal service listing offering skills to neighbors",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "category": { "type": "string", "maxLength": 50 },
+        "price": { "type": "number" },
+        "pricingType": { "type": "string", "enum": ["fixed", "hourly"] },
+        "providerId": { "type": "string", "maxLength": 128 },
+        "providerName": { "type": "string", "maxLength": 100 },
+        "providerAvatar": { "type": "string", "maxLength": 500 },
+        "providerTrustScore": { "type": "number" },
+        "providerTier": { "type": "string", "maxLength": 50 },
+        "providerBadges": { "type": "array" },
+        "location": { "type": "string", "maxLength": 150 },
+        "coordinates": { "type": "object" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "tags": { "type": "array" },
+        "imageUrl": { "type": "string", "maxLength": 500 },
+        "isCollegeOnly": { "type": "boolean" },
+        "collegeName": { "type": "string", "maxLength": 150 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "category", "price", "providerId"]
+    },
+    "serviceRequest": {
+      "title": "ServiceRequest",
+      "description": "Neighborhood task or service request posted by a resident",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "category": { "type": "string", "maxLength": 50 },
+        "budget": { "type": "number" },
+        "urgency": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+        "requesterId": { "type": "string", "maxLength": 128 },
+        "requesterName": { "type": "string", "maxLength": 100 },
+        "requesterAvatar": { "type": "string", "maxLength": 500 },
+        "requesterTrustScore": { "type": "number" },
+        "location": { "type": "string", "maxLength": 150 },
+        "coordinates": { "type": "object" },
+        "status": { "type": "string", "enum": ["open", "assigned", "completed", "cancelled"] },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "category", "budget", "requesterId", "status"]
+    },
+    "order": {
+      "title": "Order",
+      "description": "Escrow transaction and gig execution order between neighbor buyer and provider",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "serviceId": { "type": "string", "maxLength": 128 },
+        "serviceTitle": { "type": "string", "maxLength": 150 },
+        "buyerId": { "type": "string", "maxLength": 128 },
+        "buyerName": { "type": "string", "maxLength": 100 },
+        "providerId": { "type": "string", "maxLength": 128 },
+        "providerName": { "type": "string", "maxLength": 100 },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "cancelled", "disputed"] },
+        "escrowStatus": { "type": "string", "enum": ["held", "released", "refunded", "disputed"] },
+        "escrowAmount": { "type": "number" },
+        "platformFee": { "type": "number" },
+        "completionCode": { "type": "string", "maxLength": 10 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "serviceTitle", "buyerId", "providerId", "amount", "status", "escrowStatus"]
+    },
+    "chatMessage": {
+      "title": "ChatMessage",
+      "description": "Real-time communication message attached to an order or task",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "orderId": { "type": "string", "maxLength": 128 },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "senderName": { "type": "string", "maxLength": 100 },
+        "text": { "type": "string", "maxLength": 2000 },
+        "timestamp": { "type": "string", "maxLength": 64 },
+        "isSystem": { "type": "boolean" }
+      },
+      "required": ["id", "orderId", "senderId", "text", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/userProfile" },
+      "description": "Individual neighbor user profile with verified badges"
+    },
+    "/services/{serviceId}": {
+      "schema": { "$ref": "#/entities/serviceListing" },
+      "description": "Public catalog of hyperlocal service offerings"
+    },
+    "/requests/{requestId}": {
+      "schema": { "$ref": "#/entities/serviceRequest" },
+      "description": "Public catalog of neighborhood task requests"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/order" },
+      "description": "Protected escrow transactions and orders"
+    },
+    "/orders/{orderId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/chatMessage" },
+      "description": "Private order milestone discussions"
+    }
+  }
+}

@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Primitive Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'aayushgupta0605@gmail.com' ||
+        request.auth.token.email == 'admin@neighborly.in' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // System probe path for connection testing
+    match /system/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isOwner(userId) && incoming().id == userId && incoming().name is string && incoming().name.size() <= 100;
+      allow update: if (isOwner(userId) && incoming().id == userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Service Listings
+    match /services/{serviceId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().providerId == request.auth.uid && incoming().title is string && incoming().title.size() <= 150;
+      allow update: if (isSignedIn() && existing().providerId == request.auth.uid && incoming().providerId == existing().providerId) || isAdmin();
+      allow delete: if (isSignedIn() && existing().providerId == request.auth.uid) || isAdmin();
+    }
+
+    // Service Requests
+    match /requests/{requestId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().requesterId == request.auth.uid && incoming().title is string && incoming().title.size() <= 150;
+      allow update: if (isSignedIn() && (existing().requesterId == request.auth.uid || incoming().diff(existing()).affectedKeys().hasOnly(['status']))) || isAdmin();
+      allow delete: if (isSignedIn() && existing().requesterId == request.auth.uid) || isAdmin();
+    }
+
+    // Escrow Orders
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && (resource.data.buyerId == request.auth.uid || resource.data.providerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.buyerId == request.auth.uid || resource.data.providerId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && incoming().buyerId == request.auth.uid && incoming().amount is number && incoming().amount > 0;
+      allow update: if (isSignedIn() && (
+        resource.data.buyerId == request.auth.uid || 
+        resource.data.providerId == request.auth.uid || 
+        isAdmin()
+      ));
+      allow delete: if isAdmin();
+
+      // Subcollection: Order Chat Messages
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && (
+          get(/databases/$(database)/documents/orders/$(orderId)).data.buyerId == request.auth.uid ||
+          get(/databases/$(database)/documents/orders/$(orderId)).data.providerId == request.auth.uid ||
+          isAdmin()
+        );
+        allow create: if isSignedIn() && incoming().senderId == request.auth.uid && incoming().text is string && incoming().text.size() <= 2000;
+        allow update, delete: if isAdmin();
+      }
+    }
+  }
+}
