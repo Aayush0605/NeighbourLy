@@ -34,15 +34,18 @@ export const PostRequestModal: React.FC<PostRequestModalProps> = ({
   const [isSubmittedSuccess, setIsSubmittedSuccess] = useState(false);
 
   const categories: ServiceCategory[] = [
-    'Home & Repairs',
-    'Tech & Digital',
+    'Academic Support',
     'Creative & Design',
+    'Handmade & Crafts',
+    'Tech & Digital',
+    'Home Help',
+    'Events',
+    'Home & Repairs',
     'Lessons & Tutoring',
     'Pet Care',
     'Errands & Delivery',
     'Gardening & Outdoors',
-    'Craft & Handmade',
-    'Others',
+    'Other',
   ];
 
   const handleSubmit = (e: React.FormEvent) => {

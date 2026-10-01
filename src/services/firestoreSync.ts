@@ -3,11 +3,21 @@ import {
   doc, 
   setDoc, 
   getDocs, 
+  deleteDoc, 
   onSnapshot, 
-  query 
+  query,
+  updateDoc
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType, testConnection } from '../firebase';
-import { ServiceListing, TaskRequest, Order, Message, UserProfile } from '../types';
+import { db, testConnection } from '../firebase';
+import { 
+  ServiceListing, 
+  TaskRequest, 
+  Order, 
+  Message, 
+  UserProfile,
+  Conversation,
+  AppNotification
+} from '../types';
 
 export async function syncCloudConnection() {
   return await testConnection();
@@ -24,12 +34,38 @@ export async function syncUserProfileToCloud(user: UserProfile) {
 }
 
 // Service Listings
-export async function syncServiceToCloud(service: ServiceListing) {
+export async function syncServiceToCloud(service: ServiceListing): Promise<boolean> {
   try {
-    const serviceRef = doc(db, 'services', service.id);
-    await setDoc(serviceRef, service, { merge: true });
+    const sanitizedService: ServiceListing = {
+      ...service,
+      id: service.id,
+      providerId: service.providerId || service.provider?.id || 'provider_local',
+      price: Number(service.price) || 250,
+      rating: typeof service.rating === 'number' ? service.rating : 5.0,
+      reviewCount: typeof service.reviewCount === 'number' ? service.reviewCount : 0,
+      deliveryDays: Number(service.deliveryDays) || 1,
+      title: service.title.trim().slice(0, 150),
+      description: service.description.trim().slice(0, 2000),
+      category: service.category || 'Academic Support',
+    };
+
+    const serviceRef = doc(db, 'services', sanitizedService.id);
+    await setDoc(serviceRef, sanitizedService, { merge: true });
+    return true;
   } catch (error) {
     console.warn('Syncing service to cloud warning:', error);
+    return false;
+  }
+}
+
+export async function deleteServiceFromCloud(serviceId: string): Promise<boolean> {
+  try {
+    const serviceRef = doc(db, 'services', serviceId);
+    await deleteDoc(serviceRef);
+    return true;
+  } catch (error) {
+    console.warn('Deleting service from cloud warning:', error);
+    return false;
   }
 }
 
@@ -48,13 +84,57 @@ export async function fetchServicesFromCloud(): Promise<ServiceListing[]> {
   }
 }
 
+/**
+ * Real-time listener for Services collection.
+ * Any service added or deleted by ANY user immediately updates all other users!
+ */
+export function subscribeToServices(onUpdate: (services: ServiceListing[]) => void): () => void {
+  const q = query(collection(db, 'services'));
+  return onSnapshot(
+    q, 
+    (snapshot) => {
+      const list: ServiceListing[] = [];
+      snapshot.forEach((d) => {
+        list.push(d.data() as ServiceListing);
+      });
+      onUpdate(list);
+    },
+    (err) => {
+      console.warn('Realtime services subscription warning:', err);
+    }
+  );
+}
+
 // Service Requests
-export async function syncRequestToCloud(req: TaskRequest) {
+export async function syncRequestToCloud(req: TaskRequest): Promise<boolean> {
   try {
-    const reqRef = doc(db, 'requests', req.id);
-    await setDoc(reqRef, req, { merge: true });
+    const sanitizedReq: TaskRequest = {
+      ...req,
+      id: req.id,
+      requesterId: req.requesterId || 'requester_local',
+      title: req.title.trim().slice(0, 150),
+      description: req.description.trim().slice(0, 2000),
+      budget: Number(req.budget) || 300,
+      status: req.status || 'open',
+    };
+
+    const reqRef = doc(db, 'requests', sanitizedReq.id);
+    await setDoc(reqRef, sanitizedReq, { merge: true });
+    return true;
   } catch (error) {
     console.warn('Syncing request to cloud warning:', error);
+    return false;
+  }
+}
+
+export async function deleteRequestFromCloud(requestId: string): Promise<boolean> {
+  try {
+    const reqRef = doc(db, 'requests', requestId);
+    await deleteDoc(reqRef);
+    return true;
+  } catch (error) {
+    console.warn('Deleting request from cloud warning:', error);
+    return false;
   }
 }
 
@@ -71,6 +151,27 @@ export async function fetchRequestsFromCloud(): Promise<TaskRequest[]> {
     console.warn('Fetching requests from cloud warning:', error);
     return [];
   }
+}
+
+/**
+ * Real-time listener for Task Requests collection.
+ * Any request posted by ANY user immediately appears on all other users' devices!
+ */
+export function subscribeToRequests(onUpdate: (requests: TaskRequest[]) => void): () => void {
+  const q = query(collection(db, 'requests'));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: TaskRequest[] = [];
+      snapshot.forEach((d) => {
+        list.push(d.data() as TaskRequest);
+      });
+      onUpdate(list);
+    },
+    (err) => {
+      console.warn('Realtime requests subscription warning:', err);
+    }
+  );
 }
 
 // Orders
@@ -98,7 +199,145 @@ export async function fetchOrdersFromCloud(): Promise<Order[]> {
   }
 }
 
-// Messages
+export function subscribeToOrders(onUpdate: (orders: Order[]) => void): () => void {
+  const q = query(collection(db, 'orders'));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const orders: Order[] = [];
+      snapshot.forEach((d) => {
+        orders.push(d.data() as Order);
+      });
+      onUpdate(orders);
+    },
+    (err) => {
+      console.warn('Realtime orders subscription warning:', err);
+    }
+  );
+}
+
+// Conversations across different IDs
+export async function syncConversationToCloud(conversation: Conversation): Promise<boolean> {
+  try {
+    const convRef = doc(db, 'conversations', conversation.id);
+    await setDoc(convRef, conversation, { merge: true });
+    return true;
+  } catch (error) {
+    console.warn('Syncing conversation to cloud warning:', error);
+    return false;
+  }
+}
+
+export function subscribeToConversations(
+  userOrId: UserProfile | string | null | undefined,
+  onUpdate: (conversations: Conversation[]) => void
+): () => void {
+  const idsToMatch: string[] = [];
+  if (typeof userOrId === 'string' && userOrId) {
+    idsToMatch.push(userOrId.toLowerCase());
+  } else if (userOrId && typeof userOrId === 'object') {
+    if (userOrId.id) idsToMatch.push(String(userOrId.id).toLowerCase());
+    if (userOrId.userId) idsToMatch.push(String(userOrId.userId).toLowerCase());
+    if (userOrId.email) idsToMatch.push(String(userOrId.email).toLowerCase());
+  }
+
+  const q = query(collection(db, 'conversations'));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: Conversation[] = [];
+      snapshot.forEach((d) => {
+        const conv = d.data() as Conversation;
+        if (!idsToMatch.length) {
+          return;
+        }
+
+        const pIds = (conv.participantIds || []).map((x) => String(x).toLowerCase());
+        const participantObjValues = Object.values(conv.participants || {});
+
+        const isMatch =
+          pIds.some((pid) => idsToMatch.includes(pid)) ||
+          participantObjValues.some((p) => {
+            const pId = p.id ? String(p.id).toLowerCase() : '';
+            const pEmail = p.email ? String(p.email).toLowerCase() : '';
+            return idsToMatch.includes(pId) || (pEmail && idsToMatch.includes(pEmail));
+          });
+
+        if (isMatch) {
+          list.push(conv);
+        }
+      });
+      list.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
+      onUpdate(list);
+    },
+    (err) => {
+      console.warn('Realtime conversations subscription warning:', err);
+    }
+  );
+}
+
+// Conversation Messages across different IDs
+export async function syncConversationMessageToCloud(
+  conversationId: string, 
+  message: Message,
+  meta?: { lastMessage: string; lastSenderId: string; lastSenderName: string }
+): Promise<boolean> {
+  try {
+    // 1. Write the message to the subcollection
+    const msgRef = doc(db, 'conversations', conversationId, 'messages', message.id);
+    await setDoc(msgRef, message, { merge: true });
+
+    // 2. Update conversation summary using setDoc with merge: true (NEVER updateDoc which throws if document is being initialized)
+    if (meta) {
+      const convRef = doc(db, 'conversations', conversationId);
+      await setDoc(
+        convRef,
+        {
+          id: conversationId,
+          lastMessage: meta.lastMessage,
+          lastSenderId: meta.lastSenderId,
+          lastSenderName: meta.lastSenderName,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+    }
+
+    // 3. Also mirror to order messages if conversation is tied to an order
+    if (message.orderId) {
+      const orderMsgRef = doc(db, 'orders', message.orderId, 'messages', message.id);
+      await setDoc(orderMsgRef, message, { merge: true });
+    }
+
+    return true;
+  } catch (error) {
+    console.warn('Syncing conversation message to cloud warning:', error);
+    return false;
+  }
+}
+
+export function subscribeToConversationMessages(
+  conversationId: string,
+  onUpdate: (messages: Message[]) => void
+): () => void {
+  const q = query(collection(db, 'conversations', conversationId, 'messages'));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: Message[] = [];
+      snapshot.forEach((d) => {
+        list.push(d.data() as Message);
+      });
+      list.sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
+      onUpdate(list);
+    },
+    (err) => {
+      console.warn('Realtime conversation messages subscription warning:', err);
+    }
+  );
+}
+
+// Legacy/Direct order messages
 export async function syncMessageToCloud(orderId: string, message: Message) {
   try {
     const msgRef = doc(db, 'orders', orderId, 'messages', message.id);
@@ -107,3 +346,113 @@ export async function syncMessageToCloud(orderId: string, message: Message) {
     console.warn('Syncing message to cloud warning:', error);
   }
 }
+
+export function subscribeToOrderMessages(
+  orderId: string,
+  onUpdate: (messages: Message[]) => void
+): () => void {
+  const q = query(collection(db, 'orders', orderId, 'messages'));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: Message[] = [];
+      snapshot.forEach((d) => {
+        list.push(d.data() as Message);
+      });
+      list.sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
+      onUpdate(list);
+    },
+    (err) => {
+      console.warn('Realtime order messages subscription warning:', err);
+    }
+  );
+}
+
+// In-App Notifications
+export async function syncNotificationToCloud(notification: AppNotification): Promise<boolean> {
+  try {
+    const notifRef = doc(db, 'notifications', notification.id);
+    await setDoc(notifRef, notification, { merge: true });
+    return true;
+  } catch (error) {
+    console.warn('Syncing notification to cloud warning:', error);
+    return false;
+  }
+}
+
+export function subscribeToUserNotifications(
+  userOrId: UserProfile | string | null | undefined,
+  onUpdate: (notifications: AppNotification[]) => void
+): () => void {
+  const idsToMatch: string[] = [];
+  if (typeof userOrId === 'string' && userOrId) {
+    idsToMatch.push(userOrId.toLowerCase());
+  } else if (userOrId && typeof userOrId === 'object') {
+    if (userOrId.id) idsToMatch.push(String(userOrId.id).toLowerCase());
+    if (userOrId.userId) idsToMatch.push(String(userOrId.userId).toLowerCase());
+    if (userOrId.email) idsToMatch.push(String(userOrId.email).toLowerCase());
+  }
+
+  const q = query(collection(db, 'notifications'));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: AppNotification[] = [];
+      snapshot.forEach((d) => {
+        const notif = d.data() as AppNotification;
+        if (!idsToMatch.length) return;
+        const targetUserId = notif.userId ? String(notif.userId).toLowerCase() : '';
+        if (idsToMatch.includes(targetUserId)) {
+          list.push(notif);
+        }
+      });
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      onUpdate(list);
+    },
+    (err) => {
+      console.warn('Realtime notifications subscription warning:', err);
+    }
+  );
+}
+
+export async function markNotificationAsReadInCloud(notificationId: string): Promise<boolean> {
+  try {
+    const notifRef = doc(db, 'notifications', notificationId);
+    await updateDoc(notifRef, { read: true });
+    return true;
+  } catch (error) {
+    console.warn('Marking notification read warning:', error);
+    return false;
+  }
+}
+
+export async function markAllNotificationsAsReadInCloud(userId: string): Promise<boolean> {
+  try {
+    const q = query(collection(db, 'notifications'));
+    const snapshot = await getDocs(q);
+    const updates: Promise<any>[] = [];
+    snapshot.forEach((d) => {
+      const notif = d.data() as AppNotification;
+      if (notif.userId === userId && !notif.read) {
+        updates.push(updateDoc(doc(db, 'notifications', d.id), { read: true }));
+      }
+    });
+    await Promise.all(updates);
+    return true;
+  } catch (error) {
+    console.warn('Marking all notifications read warning:', error);
+    return false;
+  }
+}
+
+export async function deleteNotificationFromCloud(notificationId: string): Promise<boolean> {
+  try {
+    const notifRef = doc(db, 'notifications', notificationId);
+    await deleteDoc(notifRef);
+    return true;
+  } catch (error) {
+    console.warn('Deleting notification warning:', error);
+    return false;
+  }
+}
+

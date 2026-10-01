@@ -18,13 +18,13 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { UserProfile, TrustBadgeType } from '../types';
-import { 
-  calculateTrustScore, 
+import { calculateTrustScore, 
   getTrustTier, 
   BADGE_DEFINITIONS, 
   computeTrustBadges 
 } from '../utils/trustScore';
 import { NeighborLyLogo } from './NeighborLyLogo';
+import { CollegeAutocompleteInput } from './CollegeAutocompleteInput';
 
 interface UserProfileModalProps {
   user: UserProfile;
@@ -469,14 +469,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 {isVerifyingStudent && (
                   <form onSubmit={handleVerifyStudent} className="pt-3 border-t border-purple-200/80 space-y-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-purple-900 mb-1">University / College</label>
-                      <input
-                        type="text"
-                        required
+                      <CollegeAutocompleteInput
                         value={universityInput}
-                        onChange={(e) => setUniversityInput(e.target.value)}
-                        placeholder="e.g. Stanford University or Delhi University"
-                        className="w-full px-3 py-2 text-xs bg-white rounded-xl border border-purple-200 focus:outline-none focus:border-purple-500"
+                        onChange={(val) => setUniversityInput(val)}
+                        currentCity={user.location?.city || 'Ludhiana'}
+                        label="University / College"
+                        placeholder="Type college name (e.g. PCTE, PAU, DU, IIT)..."
+                        helperText="Type 'PC' to find PCTE Ludhiana or your local campus"
+                        required
                       />
                     </div>
                     <div>

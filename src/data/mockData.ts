@@ -1,66 +1,84 @@
 import { ServiceListing, TaskRequest, Order, Message } from '../types';
 
-const SERVICES_STORAGE_KEY = 'neighborly_services';
-const REQUESTS_STORAGE_KEY = 'neighborly_requests';
-const ORDERS_STORAGE_KEY = 'neighborly_orders';
-const MESSAGES_STORAGE_KEY = 'neighborly_messages';
+const SERVICES_STORAGE_KEY = 'neighborly_services_clean_v1';
+const REQUESTS_STORAGE_KEY = 'neighborly_requests_clean_v1';
+const ORDERS_STORAGE_KEY = 'neighborly_orders_clean_v1';
+const MESSAGES_STORAGE_KEY = 'neighborly_messages_clean_v1';
 
-/**
- * Site starts with NO dummy data as instructed.
- * All data is real and created by the user or their neighbors in localStorage.
- */
-export function getStoredServices(): ServiceListing[] {
+// Clean initial empty arrays - Zero dummy data policy
+export const DEFAULT_SERVICES: ServiceListing[] = [];
+export const DEFAULT_REQUESTS: TaskRequest[] = [];
+
+export const getStoredServices = (): ServiceListing[] => {
   try {
     const raw = localStorage.getItem(SERVICES_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error('Error reading services from storage', e);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
-  return [];
-}
+};
 
-export function saveStoredServices(services: ServiceListing[]) {
-  localStorage.setItem(SERVICES_STORAGE_KEY, JSON.stringify(services));
-}
+export const saveStoredServices = (services: ServiceListing[]): void => {
+  try {
+    localStorage.setItem(SERVICES_STORAGE_KEY, JSON.stringify(services));
+  } catch (err) {
+    console.warn('Error saving services to localStorage', err);
+  }
+};
 
-export function getStoredRequests(): TaskRequest[] {
+export const getStoredRequests = (): TaskRequest[] => {
   try {
     const raw = localStorage.getItem(REQUESTS_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error('Error reading requests from storage', e);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
-  return [];
-}
+};
 
-export function saveStoredRequests(requests: TaskRequest[]) {
-  localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(requests));
-}
+export const saveStoredRequests = (requests: TaskRequest[]): void => {
+  try {
+    localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(requests));
+  } catch (err) {
+    console.warn('Error saving requests to localStorage', err);
+  }
+};
 
-export function getStoredOrders(): Order[] {
+export const getStoredOrders = (): Order[] => {
   try {
     const raw = localStorage.getItem(ORDERS_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error('Error reading orders from storage', e);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
   }
-  return [];
-}
+};
 
-export function saveStoredOrders(orders: Order[]) {
-  localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
-}
+export const saveStoredOrders = (orders: Order[]): void => {
+  try {
+    localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+  } catch (err) {
+    console.warn('Error saving orders to localStorage', err);
+  }
+};
 
-export function getStoredMessages(): Message[] {
+export const getStoredMessages = (): Message[] => {
   try {
     const raw = localStorage.getItem(MESSAGES_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error('Error reading messages from storage', e);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
   }
-  return [];
-}
+};
 
-export function saveStoredMessages(messages: Message[]) {
-  localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
-}
+export const saveStoredMessages = (messages: Message[]): void => {
+  try {
+    localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+  } catch (err) {
+    console.warn('Error saving messages to localStorage', err);
+  }
+};

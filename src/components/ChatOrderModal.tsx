@@ -125,7 +125,7 @@ export const ChatOrderModal: React.FC<ChatOrderModalProps> = ({
               <span>Escrow Held: ₹{order.amount}</span>
               <span className="flex items-center gap-1 text-emerald-600 font-semibold">
                 <Lock className="w-3 h-3" />
-                <span>Protected by Escrow-Lite</span>
+                <span>Protected by Escrow-Lite (Demo)</span>
               </span>
             </div>
           </div>
@@ -138,9 +138,12 @@ export const ChatOrderModal: React.FC<ChatOrderModalProps> = ({
             <div className="flex items-center justify-center mx-auto">
               <NeighborLyLogo size="sm" variant="icon" />
             </div>
-            <p className="text-xs font-bold text-zinc-950">Neighborly Escrow Locked (₹{order.amount})</p>
+            <div className="flex items-center justify-center gap-1.5">
+              <p className="text-xs font-bold text-zinc-950">Neighborly Escrow-Lite (₹{order.amount})</p>
+              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">Demo</span>
+            </div>
             <p className="text-[11px] text-zinc-500 leading-relaxed">
-              Funds are held safely by Neighborly until {order.buyerName} inspects the deliverable and confirms completion.
+              Simulated demonstration funds held until {order.buyerName} inspects the deliverable and confirms completion.
             </p>
           </div>
 

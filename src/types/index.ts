@@ -9,15 +9,42 @@ export interface LocationPoint {
 }
 
 export type ServiceCategory = 
-  | 'Home & Repairs'
-  | 'Tech & Digital'
+  | 'Academic Support'
+  | 'PPT & Presentations'
+  | 'Design & Graphics'
   | 'Creative & Design'
+  | 'Video Editing'
+  | 'Web Development'
+  | 'Assignments & Academics'
+  | 'Resume & Career Help'
+  | 'Data & Research'
+  | 'Social Media'
+  | 'Handmade & Crafts'
+  | 'Tech & Digital'
+  | 'Home Help'
+  | 'Events'
+  | 'Other'
+  | 'Home & Repairs'
   | 'Lessons & Tutoring'
   | 'Pet Care'
   | 'Errands & Delivery'
   | 'Gardening & Outdoors'
-  | 'Craft & Handmade'
   | 'Others';
+
+export interface PortfolioItem {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  category?: string;
+  date?: string;
+  tags?: string[];
+  link?: string;
+  offeredSkill?: string; // Explicit offered skill showcased by this item
+  startingPrice?: number; // Starting rate for hiring this skill
+  proficiencyLevel?: 'Beginner' | 'Intermediate' | 'Advanced' | 'Campus Pro';
+  availableForHire?: boolean;
+}
 
 export type TrustBadgeType = 
   | 'student_verified'     // 🎓 Campus Student ID Verified
@@ -45,6 +72,7 @@ export interface UserProfile {
   location: LocationPoint;
   authProvider: 'google' | 'password';
   verified: boolean;
+  role?: 'user' | 'admin' | 'seller';
   
   // Neighborhood Trust Score & Verification Badges
   trustScore?: number;          // 0 to 100 dynamic calculated score
@@ -72,6 +100,9 @@ export interface UserProfile {
   isOnline?: boolean;
   bio?: string;
   skills?: string[];
+  hourlyRate?: number;
+  earningsMock?: number;
+  portfolio?: PortfolioItem[];
   joinedDate: string;
 }
 
@@ -83,6 +114,8 @@ export interface ServiceListing {
   description: string;
   category: ServiceCategory;
   price: number;
+  pricingType?: 'fixed' | 'hourly';
+  coverImage?: string;
   rushPrice?: number;
   rushHours?: number;
   deliveryDays: number;
@@ -156,7 +189,8 @@ export interface Order {
 
 export interface Message {
   id: string;
-  orderId: string;
+  orderId?: string;
+  conversationId?: string;
   senderId: string;
   senderName: string;
   senderAvatar: string;
@@ -168,3 +202,40 @@ export interface Message {
   timestamp: string;
   createdAt?: string;
 }
+
+export interface ConversationParticipant {
+  id: string;
+  name: string;
+  avatar: string;
+  role?: string;
+  email?: string;
+  studentUniversity?: string;
+}
+
+export interface Conversation {
+  id: string;
+  participantIds: string[];
+  participants: Record<string, ConversationParticipant>;
+  lastMessage: string;
+  lastSenderId: string;
+  lastSenderName: string;
+  updatedAt: string;
+  orderId?: string;
+  serviceTitle?: string;
+  unreadCount?: Record<string, number>;
+}
+
+export interface AppNotification {
+  id: string;
+  userId: string; // Recipient user ID
+  title: string;
+  body: string;
+  type: 'message' | 'order' | 'request' | 'system';
+  linkView?: 'messages' | 'orders' | 'browse';
+  linkId?: string; // conversationId, orderId, or requestId
+  read: boolean;
+  createdAt: string;
+  actorName?: string;
+  actorAvatar?: string;
+}
+

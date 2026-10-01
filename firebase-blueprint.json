@@ -109,19 +109,54 @@
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
         "orderId": { "type": "string", "maxLength": 128 },
+        "conversationId": { "type": "string", "maxLength": 128 },
         "senderId": { "type": "string", "maxLength": 128 },
         "senderName": { "type": "string", "maxLength": 100 },
+        "senderAvatar": { "type": "string", "maxLength": 500 },
         "text": { "type": "string", "maxLength": 2000 },
         "timestamp": { "type": "string", "maxLength": 64 },
         "isSystem": { "type": "boolean" }
       },
-      "required": ["id", "orderId", "senderId", "text", "timestamp"]
+      "required": ["id", "senderId", "text", "timestamp"]
+    },
+    "conversation": {
+      "title": "Conversation",
+      "description": "Direct conversation thread between two or more participants",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "participantIds": { "type": "array" },
+        "lastMessage": { "type": "string", "maxLength": 1000 },
+        "lastSenderId": { "type": "string", "maxLength": 128 },
+        "lastSenderName": { "type": "string", "maxLength": 100 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "participantIds", "lastMessage", "updatedAt"]
+    },
+    "appNotification": {
+      "title": "AppNotification",
+      "description": "User notification for messages, order milestones, or task alerts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 150 },
+        "body": { "type": "string", "maxLength": 500 },
+        "type": { "type": "string", "maxLength": 50 },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "userId", "title", "body", "type", "read", "createdAt"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/userProfile" },
       "description": "Individual neighbor user profile with verified badges"
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/userProfile" },
+      "description": "Protected private PII credentials, phone, and exact coordinates"
     },
     "/services/{serviceId}": {
       "schema": { "$ref": "#/entities/serviceListing" },
@@ -138,6 +173,18 @@
     "/orders/{orderId}/messages/{messageId}": {
       "schema": { "$ref": "#/entities/chatMessage" },
       "description": "Private order milestone discussions"
+    },
+    "/conversations/{conversationId}": {
+      "schema": { "$ref": "#/entities/conversation" },
+      "description": "Direct conversation threads between users"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/chatMessage" },
+      "description": "Real-time messages within a conversation"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/appNotification" },
+      "description": "Direct real-time notification alerts for users"
     }
   }
 }

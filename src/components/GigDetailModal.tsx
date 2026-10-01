@@ -10,12 +10,14 @@ import {
   Lock,
   Star,
   Zap,
-  X
+  X,
+  MessageSquare
 } from 'lucide-react';
 import { ServiceListing, LocationPoint, UserProfile } from '../types';
 import { calculateDistanceKm } from '../utils/location';
 import { NeighborLyLogo } from './NeighborLyLogo';
 import { TrustBadge } from './TrustBadge';
+import { getServicePhoto } from '../utils/categoryImages';
 
 interface GigDetailModalProps {
   service: ServiceListing;
@@ -25,6 +27,7 @@ interface GigDetailModalProps {
   onClose: () => void;
   onRequestOrder: (service: ServiceListing, withRush: boolean) => void;
   onToggleSave: (serviceId: string) => void;
+  onOpenMessage?: (provider: UserProfile, service: ServiceListing) => void;
 }
 
 export const GigDetailModal: React.FC<GigDetailModalProps> = ({
@@ -35,6 +38,7 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
   onClose,
   onRequestOrder,
   onToggleSave,
+  onOpenMessage,
 }) => {
   const [isRushDelivery, setIsRushDelivery] = useState(false);
 
@@ -101,6 +105,30 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
 
         {/* Scrollable Body with generous vertical spacing */}
         <div className="overflow-y-auto p-6 sm:p-8 space-y-8 flex-1">
+          
+          {/* Full-width High-Res Cover Photography */}
+          <div className="w-full h-52 sm:h-64 rounded-3xl overflow-hidden relative shadow-soft-sm bg-zinc-100">
+            <img
+              src={service.coverImage || getServicePhoto(service.category)}
+              alt={service.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between text-white">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-indigo-600/90 backdrop-blur-xs px-2.5 py-1 rounded-lg">
+                  {service.category}
+                </span>
+                <h3 className="text-lg sm:text-xl font-black font-heading mt-1 drop-shadow-md">
+                  {service.title}
+                </h3>
+              </div>
+              <span className="text-xl sm:text-2xl font-black drop-shadow-md">
+                ₹{service.price}{service.pricingType === 'hourly' || service.price < 500 ? '/hr' : ''}
+              </span>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
             
             {/* Left Column: Details */}
@@ -240,8 +268,11 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
 
                   <div className="pt-4 border-t border-zinc-100 flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-bold text-zinc-950">Total Escrow Amount</span>
-                      <p className="text-[10px] text-zinc-400">Held until you approve completion</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-zinc-950">Total Escrow Amount</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Demo</span>
+                      </div>
+                      <p className="text-[10px] text-zinc-400">Simulated hold until you approve completion</p>
                     </div>
                     <span className="text-2xl sm:text-3xl font-heading font-extrabold text-zinc-950 tabular-nums">
                       ₹{totalPrice}
@@ -250,17 +281,33 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
                 </div>
 
                 {/* Action button */}
-                <button
-                  type="button"
-                  onClick={handleBookClick}
-                  className="w-full py-3.5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl text-xs sm:text-sm font-semibold shadow-soft hover:shadow-soft-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  <Lock className="w-4 h-4" />
-                  <span>Book with Escrow-Lite</span>
-                </button>
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleBookClick}
+                    className="w-full py-3.5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl text-xs sm:text-sm font-semibold shadow-soft hover:shadow-soft-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
+                  >
+                    <Lock className="w-4 h-4" />
+                    <span>Book with Escrow-Lite (Demo)</span>
+                  </button>
+
+                  {onOpenMessage && service.provider && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenMessage(service.provider!, service);
+                      }}
+                      className="w-full py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Message Seller First</span>
+                    </button>
+                  )}
+                </div>
 
                 <p className="text-[11px] text-center text-zinc-400 leading-snug">
-                  Payment is safely held in escrow and released only when you confirm the service is delivered.
+                  🛡️ Simulated demo payment held in Escrow-Lite and released only when you confirm the service is delivered.
                 </p>
 
               </div>

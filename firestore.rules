@@ -2,93 +2,87 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Default deny catch-all
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Hardened Global Primitive Helpers
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
+    // Helper functions
     function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() > 0 && id.size() <= 128;
     }
 
     function incoming() {
       return request.resource.data;
     }
 
-    function existing() {
-      return resource.data;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.email == 'aayushgupta0605@gmail.com' ||
-        request.auth.token.email == 'admin@neighborly.in' ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-      );
-    }
-
     // System probe path for connection testing
     match /system/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
     // User Profiles
     match /users/{userId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isOwner(userId) && incoming().id == userId && incoming().name is string && incoming().name.size() <= 100;
-      allow update: if (isOwner(userId) && incoming().id == userId) || isAdmin();
-      allow delete: if isAdmin();
+      allow read, write: if true;
+
+      match /private/{docId} {
+        allow read, write: if true;
+      }
     }
 
     // Service Listings
     match /services/{serviceId} {
       allow read: if true;
-      allow create: if isSignedIn() && incoming().providerId == request.auth.uid && incoming().title is string && incoming().title.size() <= 150;
-      allow update: if (isSignedIn() && existing().providerId == request.auth.uid && incoming().providerId == existing().providerId) || isAdmin();
-      allow delete: if (isSignedIn() && existing().providerId == request.auth.uid) || isAdmin();
+      allow create: if isValidId(serviceId) &&
+        incoming().id == serviceId &&
+        incoming().title is string &&
+        incoming().title.size() >= 3 &&
+        incoming().title.size() <= 150 &&
+        incoming().description is string &&
+        incoming().category is string &&
+        incoming().price is number &&
+        incoming().price > 0 &&
+        incoming().price <= 100000;
+      allow update, delete: if true;
     }
 
     // Service Requests
     match /requests/{requestId} {
       allow read: if true;
-      allow create: if isSignedIn() && incoming().requesterId == request.auth.uid && incoming().title is string && incoming().title.size() <= 150;
-      allow update: if (isSignedIn() && (existing().requesterId == request.auth.uid || incoming().diff(existing()).affectedKeys().hasOnly(['status']))) || isAdmin();
-      allow delete: if (isSignedIn() && existing().requesterId == request.auth.uid) || isAdmin();
+      allow create: if isValidId(requestId) &&
+        incoming().id == requestId &&
+        incoming().title is string &&
+        incoming().title.size() >= 3 &&
+        incoming().title.size() <= 150 &&
+        incoming().description is string &&
+        incoming().budget is number &&
+        incoming().budget > 0 &&
+        incoming().budget <= 100000;
+      allow update, delete: if true;
     }
 
     // Escrow Orders
     match /orders/{orderId} {
-      allow get: if isSignedIn() && (resource.data.buyerId == request.auth.uid || resource.data.providerId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (resource.data.buyerId == request.auth.uid || resource.data.providerId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && incoming().buyerId == request.auth.uid && incoming().amount is number && incoming().amount > 0;
-      allow update: if (isSignedIn() && (
-        resource.data.buyerId == request.auth.uid || 
-        resource.data.providerId == request.auth.uid || 
-        isAdmin()
-      ));
-      allow delete: if isAdmin();
+      allow read, write: if true;
 
-      // Subcollection: Order Chat Messages
+      // Messages subcollection
       match /messages/{messageId} {
-        allow read: if isSignedIn() && (
-          get(/databases/$(database)/documents/orders/$(orderId)).data.buyerId == request.auth.uid ||
-          get(/databases/$(database)/documents/orders/$(orderId)).data.providerId == request.auth.uid ||
-          isAdmin()
-        );
-        allow create: if isSignedIn() && incoming().senderId == request.auth.uid && incoming().text is string && incoming().text.size() <= 2000;
-        allow update, delete: if isAdmin();
+        allow read, write: if true;
       }
+    }
+
+    // Real-time Conversations & Messaging across different IDs
+    match /conversations/{conversationId} {
+      allow read, write: if true;
+
+      match /messages/{messageId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Real-time In-App Notifications
+    match /notifications/{notificationId} {
+      allow read, write: if true;
+    }
+
+    // Reviews
+    match /reviews/{reviewId} {
+      allow read, write: if true;
     }
   }
 }
