@@ -97,33 +97,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleQuickLogin = async (persona: 'aanya' | 'admin' | 'buyer') => {
-    try {
-      if (persona === 'admin') {
-        const user = await authenticateUser('admin@neighborly.in', 'admin', 'Super Admin (Escrow Officer)', currentLocation, 'admin');
-        onLoginSuccess(user);
-        onClose();
-        return;
-      }
-
-      if (persona === 'aanya') {
-        const user = await authenticateUser('aanya.s@du.ac.in', 'password123', 'Aanya S.', currentLocation, 'user');
-        user.studentVerified = true;
-        user.studentUniversity = 'Delhi University / Campus';
-        user.studentMajor = 'Economics & Mathematics';
-        onLoginSuccess(user);
-        onClose();
-        return;
-      }
-
-      const user = await authenticateUser('alex.neighbor@gmail.com', 'password123', 'Alex M.', currentLocation, 'user');
-      onLoginSuccess(user);
-      onClose();
-    } catch (err: any) {
-      console.warn('Quick login warning:', err);
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-md animate-in fade-in duration-200">
       <div 
@@ -342,36 +315,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
-
-        {/* Quick Fill Test Personas */}
-        <div className="pt-3 border-t border-zinc-100">
-          <span className="text-[10px] text-zinc-400 uppercase font-mono block text-center mb-2">
-            Quick 1-Click Demo Profiles:
-          </span>
-          <div className="grid grid-cols-3 gap-1.5 text-[11px]">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('aanya')}
-              className="p-1.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-xl text-zinc-700 font-semibold truncate cursor-pointer text-center"
-            >
-              🎓 Student Seller
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('buyer')}
-              className="p-1.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-xl text-zinc-700 font-semibold truncate cursor-pointer text-center"
-            >
-              🏡 Neighbor Buyer
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('admin')}
-              className="p-1.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl text-purple-800 font-bold truncate cursor-pointer text-center"
-            >
-              🛡️ Admin Officer
-            </button>
-          </div>
-        </div>
 
       </div>
     </div>

@@ -104,6 +104,17 @@ export interface UserProfile {
   earningsMock?: number;
   portfolio?: PortfolioItem[];
   joinedDate: string;
+
+  // Escrow Wallet & Verified UPI Payout
+  upiId?: string;
+  upiVerified?: boolean;
+  upiAccountName?: string;
+  upiBankName?: string;
+  upiVerifiedAt?: string;
+  upiReferenceId?: string;
+  walletBalance?: number;        // Net available funds for payout after 8% commission
+  totalCommissionPaid?: number;  // Cumulative 8% fee managed by Escrow Services
+  totalTransferred?: number;      // Total funds transferred to verified UPI
 }
 
 export interface ServiceListing {
@@ -164,6 +175,19 @@ export interface OrderReview {
   createdAt: string;
 }
 
+export interface UserReview {
+  id: string;
+  targetUserId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  orderId: string;
+  taskTitle: string;
+  rating: number; // 1 to 5 stars
+  comment: string;
+  createdAt: string;
+}
+
 export interface Order {
   id: string;
   serviceId?: string;
@@ -179,12 +203,45 @@ export interface Order {
   sellerLocation?: LocationPoint;
   status: OrderStatus;
   amount: number;
+  commissionRate?: number;    // e.g. 0.08 (8%)
+  commissionAmount?: number;  // Platform safety fee managed by Escrow Services (amount * 0.08)
+  sellerPayout?: number;      // Net funds released to seller (amount * 0.92)
+  payoutStatus?: 'pending' | 'credited' | 'transferred';
+  payoutUpiId?: string;
   rushDelivery?: boolean;
   deadline: string;
   escrowStatus: EscrowStatus;
   createdAt: string;
   deliveryFiles?: OrderDeliverable[];
   review?: OrderReview;
+}
+
+export type WalletTransactionType = 
+  | 'escrow_credit'       // Earnings released to student
+  | 'payout_transfer'     // Withdrawn to bank account / UPI
+  | 'gateway_deposit'     // Added funds via Payment Gateway
+  | 'wallet_spend'        // Paid for a task using NeighborLy Funds
+  | 'escrow_lock'         // Placed into Secure Escrow Vault
+  | 'refund';             // Cancelled order refunded to wallet
+
+export interface WalletTransaction {
+  id: string;
+  userId: string;
+  type: WalletTransactionType;
+  orderId?: string;
+  orderTitle?: string;
+  grossAmount: number;
+  commissionFee: number;      // 8% commission fee cut
+  netAmount: number;
+  upiId?: string;
+  bankAccountNumber?: string;
+  bankIfsc?: string;
+  status: 'completed' | 'processing' | 'held' | 'failed';
+  createdAt: string;
+  referenceId?: string;
+  bankName?: string;
+  accountHolderName?: string;
+  paymentGateway?: 'razorpay' | 'cashfree' | 'npci_upi' | 'internal_funds';
 }
 
 export interface Message {

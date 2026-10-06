@@ -17,7 +17,7 @@ import {
   ExternalLink,
   ChevronRight
 } from 'lucide-react';
-import { UserProfile, TrustBadgeType } from '../types';
+import { UserProfile, TrustBadgeType, Order } from '../types';
 import { calculateTrustScore, 
   getTrustTier, 
   BADGE_DEFINITIONS, 
@@ -25,13 +25,18 @@ import { calculateTrustScore,
 } from '../utils/trustScore';
 import { NeighborLyLogo } from './NeighborLyLogo';
 import { CollegeAutocompleteInput } from './CollegeAutocompleteInput';
+import { ProfileReviewsSection } from './ProfileReviewsSection';
+import { canUserReviewProfile } from '../services/reviewService';
 
 interface UserProfileModalProps {
   user: UserProfile;
   isOpen: boolean;
   onClose: () => void;
   isCurrentUser?: boolean;
+  currentUser?: UserProfile | null;
+  orders?: Order[];
   onUpdateUser?: (updated: UserProfile) => void;
+  showToast?: (msg: string) => void;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -39,11 +44,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   isOpen,
   onClose,
   isCurrentUser = false,
+  currentUser = null,
+  orders = [],
   onUpdateUser,
+  showToast,
 }) => {
   if (!isOpen) return null;
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'verifications' | 'badges'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'verifications' | 'badges' | 'reviews'>('overview');
   const [isVerifyingPhone, setIsVerifyingPhone] = useState(false);
   const [phoneNumberInput, setPhoneNumberInput] = useState(user.phoneNumber || '+91 98765 43210');
   const [phoneOtp, setPhoneOtp] = useState('');
@@ -56,6 +64,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const score = calculateTrustScore(user);
   const tier = getTrustTier(score);
   const activeBadges = computeTrustBadges(user);
+  const reviewEligibility = !isCurrentUser && currentUser ? canUserReviewProfile(currentUser, user.id, orders) : { canReview: false, completedOrders: [] };
 
   // Handle Phone Verification
   const handleVerifyPhone = (e: React.FormEvent) => {
@@ -194,13 +203,34 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <span className="text-[10px] text-zinc-400">Escrow Release</span>
             </div>
           </div>
+
+          {/* Review Status Banner for other users' profiles */}
+          {!isCurrentUser && (
+            <div className="relative z-10 mt-3 pt-3 border-t border-white/10 flex items-center justify-between gap-3">
+              {reviewEligibility.canReview ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('reviews')}
+                  className="w-full py-2 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 text-xs font-black flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-98"
+                >
+                  <Star className="w-3.5 h-3.5 fill-zinc-950" />
+                  <span>Write Review (Task Completed Together ✓)</span>
+                </button>
+              ) : (
+                <div className="w-full py-1.5 px-3 rounded-xl bg-white/5 border border-white/10 text-zinc-400 text-[11px] font-medium flex items-center justify-center gap-1.5">
+                  <Lock className="w-3 h-3 text-zinc-400 shrink-0" />
+                  <span>Review option unlocks after completing a task together</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex border-b border-zinc-200 px-6 bg-zinc-50/70 text-xs font-bold text-zinc-600 shrink-0">
+        <div className="flex border-b border-zinc-200 px-4 sm:px-6 bg-zinc-50/70 text-xs font-bold text-zinc-600 shrink-0 overflow-x-auto no-scrollbar whitespace-nowrap">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`py-3 px-4 border-b-2 cursor-pointer transition-colors ${
+            className={`py-3 px-3 sm:px-4 border-b-2 cursor-pointer transition-colors shrink-0 whitespace-nowrap ${
               activeTab === 'overview'
                 ? 'border-zinc-950 text-zinc-950 font-black'
                 : 'border-transparent hover:text-zinc-950'
@@ -210,7 +240,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('badges')}
-            className={`py-3 px-4 border-b-2 cursor-pointer transition-colors flex items-center gap-1.5 ${
+            className={`py-3 px-3 sm:px-4 border-b-2 cursor-pointer transition-colors flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
               activeTab === 'badges'
                 ? 'border-zinc-950 text-zinc-950 font-black'
                 : 'border-transparent hover:text-zinc-950'
@@ -219,6 +249,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <span>Verified Badges</span>
             <span className="text-[10px] bg-zinc-200 text-zinc-800 px-1.5 py-0.2 rounded-full font-mono">
               {activeBadges.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`py-3 px-3 sm:px-4 border-b-2 cursor-pointer transition-colors flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+              activeTab === 'reviews'
+                ? 'border-zinc-950 text-zinc-950 font-black'
+                : 'border-transparent hover:text-zinc-950'
+            }`}
+          >
+            <span>Verified Reviews</span>
+            <span className="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded-full font-mono font-bold">
+              {user.reviewCount || 0}
             </span>
           </button>
           {isCurrentUser && (
@@ -559,7 +602,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       </div>
                     ) : phoneStep === 'otp' ? (
                       <div>
-                        <label className="block text-[11px] font-bold text-emerald-900 mb-1">Enter 4-Digit Code (Demo: 1234)</label>
+                        <label className="block text-[11px] font-bold text-emerald-900 mb-1">Enter 4-Digit Verification Code</label>
                         <div className="flex gap-2">
                           <input
                             type="text"
@@ -613,13 +656,26 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
           )}
 
+          {/* TAB 4: Verified Reviews (Only allowed after completing a task together) */}
+          {activeTab === 'reviews' && (
+            <div className="space-y-6">
+              <ProfileReviewsSection
+                targetUser={user}
+                currentUser={currentUser}
+                orders={orders}
+                onUpdateTargetUser={onUpdateUser}
+                showToast={showToast}
+              />
+            </div>
+          )}
+
         </div>
 
         {/* Footer */}
         <div className="p-4 px-6 bg-zinc-50 border-t border-zinc-200 flex items-center justify-between text-xs text-zinc-500 shrink-0">
           <div className="flex items-center gap-2 font-medium">
             <Lock className="w-3.5 h-3.5 text-zinc-400" />
-            <span>Escrow-Lite Protected · Bank-grade trust guarantee</span>
+            <span>Escrow Protected · Bank-grade trust guarantee</span>
           </div>
           <button
             onClick={onClose}

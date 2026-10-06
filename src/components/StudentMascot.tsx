@@ -292,7 +292,7 @@ export const StudentMascot: React.FC<StudentMascotProps> = ({
 
   // Full Hero / Spotlight Mascot Banner (Image 2, Item 11)
   return (
-    <div className={`relative bg-gradient-to-br from-purple-50/90 via-indigo-50/50 to-pink-50/60 rounded-3xl border border-purple-200/80 p-5 sm:p-7 shadow-soft overflow-hidden ${className}`}>
+    <div className={`relative clay-card bg-gradient-to-br from-purple-50/90 via-indigo-50/60 to-pink-50/70 p-6 sm:p-8 overflow-hidden ${className}`}>
       {/* Background ambient confetti doodle shapes */}
       <div className="absolute top-3 right-6 text-amber-400 opacity-60 text-lg font-bold select-none">✦</div>
       <div className="absolute top-12 right-20 text-indigo-400 opacity-50 text-sm select-none">★</div>
@@ -310,14 +310,12 @@ export const StudentMascot: React.FC<StudentMascotProps> = ({
         {/* Speech Cloud & NeighborLy Brand Lockup */}
         <div className="space-y-3 text-center sm:text-left flex-1">
           
-          {/* Cloud Speech Bubble with hand-drawn feel */}
+          {/* Cloud Speech Bubble with clay pillowy feel */}
           <div className="inline-block relative">
-            <div className="bg-white/95 backdrop-blur-xs px-4 py-2 rounded-2xl border border-purple-200 shadow-soft-xs text-xs sm:text-sm font-heading font-black text-purple-950 tracking-tight flex items-center gap-1.5 mx-auto sm:mx-0">
+            <div className="clay-badge-white px-4 py-2 text-xs sm:text-sm font-heading font-black text-purple-950 tracking-tight flex items-center gap-1.5 mx-auto sm:mx-0">
               <span className="text-purple-600">✦</span>
               <span>Learn · Earn · Grow Together!</span>
             </div>
-            {/* Speech bubble tail pointer */}
-            <div className="hidden sm:block absolute -left-2 top-3 w-3 h-3 bg-white border-l border-b border-purple-200 rotate-45" />
           </div>
 
           {/* Logo + Tagline */}
@@ -326,31 +324,13 @@ export const StudentMascot: React.FC<StudentMascotProps> = ({
               Neighbor<span className="text-purple-600">Ly</span>
             </h3>
             <p className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-purple-700">
-              Students Helping Students
+              By Students
             </p>
           </div>
 
           <p className="text-xs text-zinc-600 max-w-md leading-relaxed">
             Need assignment help, dorm moving, coding tips, or want to earn by offering your skills? Connect with verified peers right from your campus.
           </p>
-
-          {/* Tag Badges (Friendly · Relatable · Student-Centric · Memorable) */}
-          {showTags && (
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-1">
-              <span className="text-[10px] font-bold text-purple-700 bg-purple-100/90 border border-purple-200/80 px-2.5 py-0.5 rounded-full">
-                Friendly
-              </span>
-              <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100/90 border border-indigo-200/80 px-2.5 py-0.5 rounded-full">
-                Relatable
-              </span>
-              <span className="text-[10px] font-bold text-blue-700 bg-blue-100/90 border border-blue-200/80 px-2.5 py-0.5 rounded-full">
-                Student-Centric
-              </span>
-              <span className="text-[10px] font-bold text-pink-700 bg-pink-100/90 border border-pink-200/80 px-2.5 py-0.5 rounded-full">
-                Memorable
-              </span>
-            </div>
-          )}
 
         </div>
 

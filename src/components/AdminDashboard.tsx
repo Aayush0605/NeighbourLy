@@ -750,7 +750,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center justify-between text-[11px] text-zinc-400 pt-2 border-t border-zinc-100">
                 <span className="flex items-center gap-1 text-emerald-600 font-semibold">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>All escrow transactions backed by Escrow-Lite</span>
+                  <span>All escrow transactions backed by Proper Escrow Services</span>
                 </span>
                 <span>Values dynamically reflect genuine platform orders</span>
               </div>
@@ -969,7 +969,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Lock className="w-8 h-8 text-zinc-300 mx-auto" />
                   <p className="text-sm font-bold text-zinc-800">No Orders in Escrow Yet</p>
                   <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-                    When neighbors book services, their funds will appear here under Escrow-Lite protection until marked completed.
+                    When neighbors book services, their funds will appear here under Proper Escrow Services protection until marked completed.
                   </p>
                 </div>
               ) : (

@@ -19,6 +19,7 @@ import { AdminDashboard } from './AdminDashboard';
 import { getServicePhoto } from '../utils/categoryImages';
 import { CollegeAutocompleteInput } from './CollegeAutocompleteInput';
 import { PortfolioShowcase } from './PortfolioShowcase';
+import { ProfileReviewsSection } from './ProfileReviewsSection';
 
 interface ProfileViewProps {
   currentUser: UserProfile;
@@ -45,7 +46,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onOpenPostService,
   onAdminUpdateOrderStatus,
 }) => {
-  const [activeTab, setActiveTab] = useState<'services' | 'portfolio' | 'credentials' | 'admin'>('services');
+  const [activeTab, setActiveTab] = useState<'services' | 'portfolio' | 'credentials' | 'reviews' | 'admin'>('services');
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState(currentUser.bio || '');
   const [nameInput, setNameInput] = useState(currentUser.name || 'You');
@@ -72,9 +73,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   // Calculate real metrics (No fake demo data)
   const totalOrders = orders.filter((o) => o.sellerId === currentUser.id || o.buyerId === currentUser.id).length;
   const completedJobs = orders.filter((o) => o.sellerId === currentUser.id && o.status === 'completed').length;
-  const realEarnings = orders
+  const grossEarnings = orders
     .filter((o) => o.sellerId === currentUser.id && o.status === 'completed')
     .reduce((acc, o) => acc + o.amount, 0);
+  const platformCommission = Math.round(grossEarnings * 0.08); // 8% commission cut
+  const netEarnings = Math.max(0, grossEarnings - platformCommission); // 92% student payout
 
   // Profile completion calculation
   const completionPercent = Math.min(
@@ -125,8 +128,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   return (
-    <div className="bg-[#FAF8F5] min-h-[calc(100vh-4rem)] py-8 sm:py-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
+    <div className="bg-[#FAF8F5] min-h-[calc(100vh-4rem)] py-8 sm:py-12 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8 w-full max-w-full">
         
         {/* Top Profile Card (Exact Screenshot 3 Match) */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/90 shadow-2xs space-y-6">
@@ -276,14 +279,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </span>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-zinc-200/90 shadow-2xs text-center space-y-1">
-            <span className="text-2xl sm:text-3xl font-black font-heading text-zinc-950 block">
-              ₹{realEarnings}
+          <button
+            type="button"
+            onClick={onNavigateOrders}
+            className="bg-white rounded-3xl p-5 sm:p-6 border border-zinc-200/90 shadow-2xs text-center space-y-1 hover:border-indigo-300 transition-all cursor-pointer group"
+            title="Open Escrow Wallet & Direct Payouts"
+          >
+            <span className="text-2xl sm:text-3xl font-black font-heading text-emerald-700 block group-hover:scale-105 transition-transform">
+              ₹{netEarnings}
             </span>
             <span className="text-xs text-zinc-500 font-medium block">
-              Total earnings
+              Net Earnings (8% fee cut)
             </span>
-          </div>
+            <span className="text-[10px] text-indigo-600 font-bold block">
+              {currentUser.upiVerified ? '✓ Verified UPI Linked' : 'Verify UPI for Payouts →'}
+            </span>
+          </button>
 
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-zinc-200/90 shadow-2xs text-center space-y-1">
             <span className="text-2xl sm:text-3xl font-black font-heading text-zinc-950 block">
@@ -296,10 +307,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
 
         {/* Tab Navigation for Dashboard Management */}
-        <div id="profile-services-tab" className="flex items-center gap-2 border-b border-zinc-200 pb-2">
+        <div id="profile-services-tab" className="flex items-center gap-2 border-b border-zinc-200 pb-2 overflow-x-auto no-scrollbar w-full max-w-full whitespace-nowrap">
           <button
             onClick={() => setActiveTab('services')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'services'
                 ? 'bg-zinc-950 text-white shadow-soft-xs'
                 : 'text-zinc-600 hover:text-zinc-950'
@@ -309,7 +320,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('portfolio')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'portfolio'
                 ? 'bg-zinc-950 text-white shadow-soft-xs'
                 : 'text-zinc-600 hover:text-zinc-950'
@@ -319,7 +330,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('credentials')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'credentials'
                 ? 'bg-zinc-950 text-white shadow-soft-xs'
                 : 'text-zinc-600 hover:text-zinc-950'
@@ -327,13 +338,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           >
             Student Badges & Trust
           </button>
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+              activeTab === 'reviews'
+                ? 'bg-zinc-950 text-white shadow-soft-xs'
+                : 'text-zinc-600 hover:text-zinc-950'
+            }`}
+          >
+            <span>Verified Task Reviews</span>
+            <span className="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded-full font-mono font-bold">
+              {currentUser.reviewCount || 0}
+            </span>
+          </button>
           {currentUser.role === 'admin' && (
             <button
               onClick={() => setActiveTab('admin')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                 activeTab === 'admin'
                   ? 'bg-rose-600 text-white shadow-soft-xs'
-                  : 'text-rose-700 bg-rose-50 hover:bg-rose-100'
+                : 'text-rose-700 bg-rose-50 hover:bg-rose-100'
               }`}
             >
               <Lock className="w-3.5 h-3.5" />
@@ -471,12 +495,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200 flex items-start gap-3">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-bold text-zinc-900">Escrow-Lite Protection Active</p>
+                  <p className="text-xs font-bold text-zinc-900">Proper Escrow Services Active</p>
                   <p className="text-[11px] text-zinc-600 mt-0.5">
-                    100% funds released upon client sign-off.
+                    100% funds safely held in escrow and released upon client sign-off.
                   </p>
                   <span className="text-[10px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded-full inline-block mt-2">
-                    100% Reliable 🔒
+                    100% Secured 🔒
                   </span>
                 </div>
               </div>
@@ -484,14 +508,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
         )}
 
-        {/* TAB 4: Admin Escrow Vault (Only visible if logged in as Admin) */}
+        {/* TAB 4: Verified Task Reviews */}
+        {activeTab === 'reviews' && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/90 shadow-2xs space-y-6 animate-in fade-in duration-200">
+            <ProfileReviewsSection
+              targetUser={currentUser}
+              currentUser={currentUser}
+              orders={orders}
+              onUpdateTargetUser={onUpdateProfile}
+            />
+          </div>
+        )}
+
+        {/* TAB 5: Admin Escrow Vault (Only visible if logged in as Admin) */}
         {activeTab === 'admin' && currentUser.role === 'admin' && (
           <div className="space-y-4 animate-in fade-in duration-200">
             <AdminDashboard
               services={services}
               requests={[]}
               orders={orders}
-              currentLocation={currentUser.location || { lat: 12.9716, lng: 77.5946, neighborhood: 'Indiranagar', city: 'Bengaluru' }}
+              currentLocation={currentUser.location || { lat: 28.6139, lng: 77.2090, neighborhood: 'Campus Area', city: 'Local City' }}
               currentUser={currentUser}
               onDeleteService={onDeleteService}
               onUpdateOrderStatus={onAdminUpdateOrderStatus || (() => {})}

@@ -57,7 +57,7 @@ export const AiAssistantModal: React.FC<AiAssistantProps> = ({
     {
       id: 'welcome',
       sender: 'assistant',
-      text: `Hello! 👋 I'm your **Neighborly AI Assistant**, powered by **Gemini 3.8 Flash**.\n\nI can help you find trusted skills near **${currentLocation.neighborhood || currentLocation.city}**, estimate fair neighbor pricing, draft task requests, or explain our **Escrow-Lite** safety guarantees. How can I assist you today?`,
+      text: `Hello! 👋 I'm your **Neighborly AI Assistant**, powered by **Gemini 3.8 Flash**.\n\nI can help you find trusted skills near **${currentLocation.neighborhood || currentLocation.city}**, estimate fair neighbor pricing, draft task requests, or explain our **Verified Escrow Services** safety guarantees. How can I assist you today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -68,7 +68,7 @@ export const AiAssistantModal: React.FC<AiAssistantProps> = ({
   const quickPrompts = [
     { label: '🔧 Find plumbers & repairs near me', prompt: `Find home repair and plumbing services near ${currentLocation.neighborhood}` },
     { label: '💰 Fair price for Wi-Fi / Tech setup', prompt: `What is the fair market price to pay a neighbor for Wi-Fi and router troubleshooting?` },
-    { label: '🛡️ How does Escrow-Lite protection work?', prompt: `Explain how Neighborly's Escrow-Lite protects my money when hiring a neighbor` },
+    { label: '🛡️ How does Escrow protection work?', prompt: `Explain how Neighborly's Verified Escrow Services protect my money when hiring a neighbor` },
     { label: '📝 Help me write a task for pet sitting', prompt: `Help me draft a task request for a pet sitter for 2 days with recommended budget` },
   ];
 
@@ -131,7 +131,7 @@ export const AiAssistantModal: React.FC<AiAssistantProps> = ({
       const assistantMsg: ChatMessage = {
         id: `ai_${Date.now()}`,
         sender: 'assistant',
-        text: `Here are the top active listings near **${currentLocation.neighborhood}**:\n\n• **${services[0]?.title || 'Local Home Help'}** (₹${services[0]?.price || 350})\n• **${services[1]?.title || 'Tech Setup'}** (₹${services[1]?.price || 400})\n\nAll tasks include full **Escrow-Lite** safety.`,
+        text: `Here are the top active listings near **${currentLocation.neighborhood}**:\n\n• **${services[0]?.title || 'Local Home Help'}** (₹${services[0]?.price || 350})\n• **${services[1]?.title || 'Tech Setup'}** (₹${services[1]?.price || 400})\n\nAll tasks include full **Verified Escrow Services** safety.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         suggestedServices: services.slice(0, 2),
       };
@@ -308,7 +308,7 @@ export const AiAssistantModal: React.FC<AiAssistantProps> = ({
         <div className="mt-2.5 flex items-center justify-between text-[11px] text-zinc-400 px-1">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Escrow-Lite & Identity Verified</span>
+            <span>Proper Escrow & Identity Verified</span>
           </span>
           <div className="flex items-center gap-3">
             <button

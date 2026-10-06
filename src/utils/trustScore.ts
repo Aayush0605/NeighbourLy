@@ -100,7 +100,7 @@ export function getTrustTier(score: number): {
       textColor: 'text-purple-700',
       badgeBg: 'bg-purple-50 border-purple-200/90 text-purple-800',
       ringColor: 'ring-purple-500',
-      description: 'Account verified with protected escrow-lite transactions active.',
+      description: 'Account verified with protected Escrow Services transactions active.',
     };
   }
   return {

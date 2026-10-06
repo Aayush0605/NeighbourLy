@@ -14,7 +14,7 @@ export const NeighborLyLogo: React.FC<NeighborLyLogoProps> = ({
   variant = 'full',
   theme = 'auto',
   showTagline = false,
-  tagline = 'Students Helping Students',
+  tagline = 'By Students',
   className = '',
 }) => {
   const iconSizes = {
@@ -199,11 +199,11 @@ export const NeighborLyLogo: React.FC<NeighborLyLogoProps> = ({
 
   // Full Horizontal or Vertical Logo with Official Typography & Purple "Ly"
   return (
-    <div className={`inline-flex items-center gap-2.5 select-none group cursor-pointer ${className}`}>
+    <div className={`inline-flex items-center gap-2 sm:gap-2.5 select-none group cursor-pointer shrink-0 whitespace-nowrap ${className}`}>
       <NMarkSvg width={s} height={s} />
-      <div className="flex flex-col justify-center leading-none">
+      <div className="flex flex-col justify-center leading-none shrink-0">
         <span
-          className={`font-heading font-extrabold tracking-tight ${textSizes[size]} ${
+          className={`font-heading font-extrabold tracking-tight whitespace-nowrap ${textSizes[size]} ${
             isDark ? 'text-white' : 'text-zinc-950'
           }`}
         >
@@ -211,7 +211,7 @@ export const NeighborLyLogo: React.FC<NeighborLyLogoProps> = ({
         </span>
         {showTagline && (
           <span
-            className={`text-[9px] tracking-wider font-bold mt-1 uppercase ${
+            className={`text-[9px] tracking-wider font-bold mt-1 uppercase whitespace-nowrap ${
               isDark ? 'text-zinc-400' : 'text-zinc-500'
             }`}
           >

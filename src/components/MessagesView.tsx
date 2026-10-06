@@ -36,7 +36,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   const quickReplies = [
     'Hi! Are you available to help with this task?',
     'What is your delivery turnaround time?',
-    'Sounds great, let\'s confirm via Escrow-Lite.',
+    'Sounds great, let\'s confirm via Escrow Services.',
     'Could you share a quick sample or details?',
   ];
 
@@ -278,7 +278,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 <div className="flex items-center gap-2">
                   <div className="hidden sm:flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full font-bold border border-emerald-100">
                     <Shield className="w-3.5 h-3.5" />
-                    <span>Escrow-Lite Protected</span>
+                    <span>Escrow Protected</span>
                   </div>
                 </div>
               </div>

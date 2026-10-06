@@ -55,7 +55,7 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
     {
       id: 'welcome',
       sender: 'assistant',
-      text: `Hello neighbor! 👋 I'm your **Neighborly AI Assistant**, powered by **Gemini 3.8 Flash**.\n\nI can help you:\n• Find trusted neighbors for home repairs, tech setup, pet care & tutoring near **${currentLocation.neighborhood || currentLocation.city}**\n• Estimate fair market rates for neighborhood tasks\n• Help draft your task request or skill listing\n• Explain our **Escrow-Lite** safety guarantees\n\nHow can I help you today?`,
+      text: `Hello neighbor! 👋 I'm your **Neighborly AI Assistant**, powered by **Gemini 3.8 Flash**.\n\nI can help you:\n• Find trusted neighbors for home repairs, tech setup, pet care & tutoring near **${currentLocation.neighborhood || currentLocation.city}**\n• Estimate fair market rates for neighborhood tasks\n• Help draft your task request or skill listing\n• Explain our **Verified Escrow Services** safety guarantees\n\nHow can I help you today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -69,7 +69,7 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
   const quickPrompts = [
     { label: '🔧 Find repairs & plumbing', prompt: `Find home repair and plumbing services near ${currentLocation.neighborhood}` },
     { label: '💰 Tech setup price guide', prompt: `What is the fair market rate to pay a neighbor for Wi-Fi and PC troubleshooting?` },
-    { label: '🛡️ How does Escrow-Lite work?', prompt: `How does Neighborly Escrow-Lite protect my money?` },
+    { label: '🛡️ How do Escrow Services work?', prompt: `How does Neighborly Verified Escrow Protection protect my money?` },
     { label: '📝 Help draft dog walking task', prompt: `Help me draft a task request for pet sitting with recommended budget` },
   ];
 
@@ -145,7 +145,7 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
       const assistantMsg: ChatMessage = {
         id: `ai_${Date.now()}`,
         sender: 'assistant',
-        text: `Here are recommended verified listings near **${currentLocation.neighborhood}**:\n\n• **${matched[0]?.title || 'Neighborhood Helper'}** (₹${matched[0]?.price || 350})\n• **${matched[1]?.title || 'Tech Setup'}** (₹${matched[1]?.price || 400})\n\nAll tasks include complete **Escrow-Lite** safety.`,
+        text: `Here are recommended verified listings near **${currentLocation.neighborhood}**:\n\n• **${matched[0]?.title || 'Neighborhood Helper'}** (₹${matched[0]?.price || 350})\n• **${matched[1]?.title || 'Tech Setup'}** (₹${matched[1]?.price || 400})\n\nAll tasks include complete **Proper Escrow Services** safety.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         suggestedServices: matched,
       };
@@ -197,7 +197,7 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
           className={`fixed z-50 transition-all duration-200 flex flex-col bg-white border border-zinc-200/90 shadow-2xl overflow-hidden ${
             isExpanded
               ? 'inset-2 sm:inset-10 rounded-3xl'
-              : 'bottom-20 md:bottom-6 right-3 sm:right-6 w-[calc(100vw-1.5rem)] sm:w-[420px] h-[520px] sm:h-[580px] max-h-[80vh] sm:max-h-[85vh] rounded-3xl'
+              : 'bottom-20 md:bottom-6 left-3 sm:left-auto right-3 sm:right-6 sm:w-[420px] max-w-[calc(100%-1.5rem)] h-[520px] sm:h-[580px] max-h-[80vh] sm:max-h-[85vh] rounded-3xl'
           } animate-in slide-in-from-bottom-4 zoom-in-95 duration-200`}
         >
           {/* Header */}
@@ -377,7 +377,7 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
             <div className="mt-2 flex items-center justify-between text-[10px] text-zinc-400 px-1">
               <span className="flex items-center gap-1 text-emerald-700 font-medium">
                 <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                <span>Escrow-Lite Protected</span>
+                <span>Proper Escrow Protected</span>
               </span>
               <div className="flex items-center gap-2">
                 <button

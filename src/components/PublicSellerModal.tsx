@@ -10,8 +10,9 @@ import {
   BookOpen,
   CheckCircle2
 } from 'lucide-react';
-import { UserProfile, ServiceListing } from '../types';
+import { UserProfile, ServiceListing, Order } from '../types';
 import { getServicePhoto } from '../utils/categoryImages';
+import { ProfileReviewsSection } from './ProfileReviewsSection';
 
 interface PublicSellerModalProps {
   user: UserProfile;
@@ -20,6 +21,10 @@ interface PublicSellerModalProps {
   services?: ServiceListing[];
   onOpenMessage: (user: UserProfile) => void;
   onSelectService?: (service: ServiceListing) => void;
+  currentUser?: UserProfile | null;
+  orders?: Order[];
+  onUpdateUser?: (updated: UserProfile) => void;
+  showToast?: (msg: string) => void;
 }
 
 export const PublicSellerModal: React.FC<PublicSellerModalProps> = ({
@@ -29,6 +34,10 @@ export const PublicSellerModal: React.FC<PublicSellerModalProps> = ({
   services = [],
   onOpenMessage,
   onSelectService,
+  currentUser = null,
+  orders = [],
+  onUpdateUser,
+  showToast,
 }) => {
   if (!isOpen) return null;
 
@@ -67,7 +76,7 @@ export const PublicSellerModal: React.FC<PublicSellerModalProps> = ({
 
             <p className="text-xs text-zinc-500 flex items-center gap-1">
               <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
-              <span>{user.location?.neighborhood || 'Near City Centre, Bengaluru'}</span>
+              <span>{user.location?.neighborhood ? `${user.location.neighborhood}${user.location.city ? `, ${user.location.city}` : ''}` : 'Local Campus Area'}</span>
             </p>
 
             <div className="flex items-center gap-3 pt-1 text-xs text-zinc-600">
@@ -83,7 +92,7 @@ export const PublicSellerModal: React.FC<PublicSellerModalProps> = ({
 
         {/* Bio */}
         <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 text-xs sm:text-sm text-zinc-700 leading-relaxed">
-          {user.bio || 'Verified student offering quality peer skills with Escrow-Lite payment protection.'}
+          {user.bio || 'Verified student offering quality peer skills with Escrow Services payment protection.'}
         </div>
 
         {/* University / Credentials */}
@@ -196,6 +205,17 @@ export const PublicSellerModal: React.FC<PublicSellerModalProps> = ({
             </div>
           </div>
         )}
+
+        {/* Verified Reviews Section (Review unlocked only after completed task together) */}
+        <div className="pt-2">
+          <ProfileReviewsSection
+            targetUser={user}
+            currentUser={currentUser}
+            orders={orders}
+            onUpdateTargetUser={onUpdateUser}
+            showToast={showToast}
+          />
+        </div>
 
         {/* Action Button */}
         <div className="pt-3 border-t border-zinc-100 flex items-center gap-3">

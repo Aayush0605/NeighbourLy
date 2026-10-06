@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { MessageSquare, ShieldCheck, CheckCircle2, Clock } from 'lucide-react';
+import { MessageSquare, ShieldCheck, CheckCircle2, Clock, Wallet, Star } from 'lucide-react';
 import { Order, UserProfile } from '../types';
 import { getServicePhoto } from '../utils/categoryImages';
+import { EscrowWalletDashboard } from './EscrowWalletDashboard';
 
 interface OrdersViewProps {
   orders: Order[];
@@ -9,6 +10,8 @@ interface OrdersViewProps {
   onOpenOrderChat: (orderId: string) => void;
   onNavigateBrowse: () => void;
   onReleaseEscrow: (orderId: string) => void;
+  onUpdateUser?: (updated: UserProfile) => void;
+  showToast?: (msg: string) => void;
 }
 
 export const OrdersView: React.FC<OrdersViewProps> = ({
@@ -17,8 +20,10 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   onOpenOrderChat,
   onNavigateBrowse,
   onReleaseEscrow,
+  onUpdateUser,
+  showToast,
 }) => {
-  const [tab, setTab] = useState<'active' | 'completed' | 'cancelled'>('active');
+  const [tab, setTab] = useState<'active' | 'completed' | 'cancelled' | 'wallet'>('active');
 
   const filteredOrders = orders.filter((o) => {
     if (tab === 'active') return o.status !== 'completed' && o.status !== 'cancelled';
@@ -56,8 +61,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   };
 
   return (
-    <div className="bg-[#FAF8F5] min-h-[calc(100vh-4rem)] py-8 sm:py-12">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="bg-[#FAF8F5] min-h-[calc(100vh-4rem)] py-8 sm:py-12 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 w-full max-w-full">
         
         {/* Header (Exact Screenshot Match) */}
         <div className="mb-6 space-y-1">
@@ -70,31 +75,44 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         </div>
 
         {/* Tab Pills */}
-        <div className="flex items-center gap-2 mb-8">
+        <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-1 no-scrollbar w-full max-w-full whitespace-nowrap">
           {[
-            { id: 'active', label: 'Active' },
+            { id: 'active', label: 'Active Tasks' },
             { id: 'completed', label: 'Completed' },
             { id: 'cancelled', label: 'Cancelled' },
+            { id: 'wallet', label: 'Escrow Wallet & Payouts (8% Fee)', icon: <Wallet className="w-3.5 h-3.5" /> },
           ].map((t) => {
             const isSelected = tab === t.id;
             return (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id as any)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
                   isSelected
-                    ? 'bg-zinc-950 text-white shadow-soft-xs'
-                    : 'bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200/90'
+                    ? 'clay-button-primary text-white shadow-md'
+                    : 'clay-pill text-zinc-700 hover:text-indigo-600'
                 }`}
               >
-                {t.label}
+                {t.icon}
+                <span>{t.label}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Orders List */}
-        <div className="space-y-4">
+        {/* Tab Content: Wallet & Payouts */}
+        {tab === 'wallet' && currentUser && (
+          <EscrowWalletDashboard
+            currentUser={currentUser}
+            orders={orders}
+            onUpdateUser={onUpdateUser || (() => {})}
+            showToast={showToast || (() => {})}
+          />
+        )}
+
+        {/* Orders List for Active / Completed / Cancelled */}
+        {tab !== 'wallet' && (
+          <div className="space-y-4">
           {filteredOrders.length === 0 ? (
             <div className="bg-white rounded-3xl p-12 text-center border border-zinc-200/80 shadow-2xs space-y-3">
               <span className="text-3xl">📦</span>
@@ -136,10 +154,15 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                 </div>
 
                 {/* Right Section: Price, Status Badge, Actions */}
-                <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-6 border-t sm:border-t-0 pt-3 sm:pt-0 border-zinc-100">
-                  <span className="text-base font-black text-zinc-950 font-heading">
-                    ₹{order.amount}
-                  </span>
+                <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 sm:gap-6 border-t sm:border-t-0 pt-3 sm:pt-0 border-zinc-100 min-w-0">
+                  <div className="text-right">
+                    <span className="text-base font-black text-zinc-950 font-heading block">
+                      ₹{order.amount}
+                    </span>
+                    <span className="text-[10px] text-zinc-500 font-semibold block">
+                      8% fee: ₹{Math.round(order.amount * 0.08)}
+                    </span>
+                  </div>
 
                   {getStatusBadge(order)}
 
@@ -151,6 +174,22 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                       >
                         Approve & Release
                       </button>
+                    )}
+                    {order.status === 'completed' && !order.review && (
+                      <button
+                        onClick={() => onOpenOrderChat(order.id)}
+                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-soft transition-all cursor-pointer flex items-center gap-1"
+                        title="Leave review for completed task"
+                      >
+                        <Star className="w-3.5 h-3.5 fill-white text-white" />
+                        <span>Leave Review</span>
+                      </button>
+                    )}
+                    {order.status === 'completed' && order.review && (
+                      <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                        <span>Reviewed ({order.review.rating}★)</span>
+                      </span>
                     )}
                     <button
                       onClick={() => onOpenOrderChat(order.id)}
@@ -165,6 +204,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             ))
           )}
         </div>
+        )}
 
       </div>
     </div>

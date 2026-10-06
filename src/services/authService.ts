@@ -11,6 +11,7 @@ import {
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { UserProfile, LocationPoint } from '../types';
+import { DEFAULT_LOCATION } from '../utils/location';
 
 const AUTH_USER_KEY = 'neighborly_auth_user_v3';
 
@@ -124,12 +125,7 @@ export async function authenticateUser(
     name: name?.trim() || username.toUpperCase(),
     email: cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@neighborly.in`,
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-    location: currentLocation || {
-      lat: 12.9716,
-      lng: 77.5946,
-      neighborhood: 'Campus Area',
-      city: 'Bengaluru'
-    },
+    location: currentLocation || DEFAULT_LOCATION,
     authProvider: 'password',
     verified: true,
     role,

@@ -145,8 +145,8 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
   }, [requests, currentLocation, selectedCategory, searchQuery, maxPrice, maxDistance, locationScope]);
 
   return (
-    <div className="bg-[#FAF8F5] min-h-screen py-6 sm:py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div className="bg-[#FAF8F5] min-h-screen py-6 sm:py-10 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 w-full max-w-full">
         
         {/* Top Header: Title and Search Bar */}
         <div className="space-y-4">
@@ -168,7 +168,7 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {onOpenPostService && (
                 <button
                   onClick={onOpenPostService}
@@ -220,10 +220,10 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
           </div>
 
           {/* Tabs: Offered Skills vs Tasks Needed (Requests) */}
-          <div className="flex items-center gap-3 border-b border-zinc-200 pb-2">
+          <div className="flex items-center gap-2 sm:gap-3 border-b border-zinc-200 pb-2 overflow-x-auto no-scrollbar w-full max-w-full whitespace-nowrap">
             <button
               onClick={() => setActiveTab('services')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 whitespace-nowrap ${
                 activeTab === 'services'
                   ? 'bg-zinc-950 text-white shadow-soft-xs'
                   : 'bg-white text-zinc-600 hover:text-zinc-950 border border-zinc-200'
@@ -234,7 +234,7 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('requests')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 whitespace-nowrap ${
                 activeTab === 'requests'
                   ? 'bg-zinc-950 text-white shadow-soft-xs'
                   : 'bg-white text-zinc-600 hover:text-zinc-950 border border-zinc-200'
@@ -247,7 +247,8 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
         </div>
 
         {/* Horizontal Category Carousel for Fast Filtering */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        {/* Quick Category Filter Scroll Bar (Claymorphic Pills) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar w-full max-w-full">
           {categories.map((cat) => {
             const isActive = selectedCategory === cat.id;
             return (
@@ -255,10 +256,10 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                 key={cat.id}
                 type="button"
                 onClick={() => onCategoryChange(cat.id)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+                className={`px-4 py-2 text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                   isActive
-                    ? 'bg-zinc-950 text-white shadow-soft-xs'
-                    : 'bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-100/80'
+                    ? 'clay-button-primary text-white shadow-md'
+                    : 'clay-pill text-zinc-700 hover:text-indigo-600'
                 }`}
               >
                 {cat.label}
@@ -268,10 +269,10 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
         </div>
 
         {/* Main Layout Grid: Left Filters Sidebar + Right Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full max-w-full">
           
-          {/* Left Sidebar Filter (Sticky Desktop) */}
-          <div className={`lg:col-span-3 bg-white rounded-3xl p-5 sm:p-6 border border-zinc-200/90 shadow-2xs space-y-6 ${isMobileFilterOpen ? 'block' : 'hidden lg:block'}`}>
+          {/* Left Sidebar Filter (Claymorphic Sticky Desktop) */}
+          <div className={`lg:col-span-3 min-w-0 clay-card p-5 sm:p-6 space-y-6 ${isMobileFilterOpen ? 'block' : 'hidden lg:block'}`}>
             <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
               <span className="text-xs font-bold text-zinc-950 uppercase tracking-wider">
                 Filter & Scope
@@ -365,15 +366,15 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
 
             {/* Trust Assurance Badge */}
             <div className="p-3.5 bg-indigo-50/70 rounded-2xl border border-indigo-100 text-xs space-y-1">
-              <span className="font-bold text-indigo-950 block">🔒 Escrow-Lite Safety</span>
+              <span className="font-bold text-indigo-950 block">🔒 Escrow Services Protection</span>
               <p className="text-[11px] text-indigo-800/90 leading-relaxed">
-                Your payment is safely held until you approve the completed task.
+                Your payment is safely held in an audited escrow account until you review and approve the completed task.
               </p>
             </div>
           </div>
 
           {/* Right Content Area: Either Services or Requests */}
-          <div className="lg:col-span-9 space-y-4">
+          <div className="lg:col-span-9 min-w-0 space-y-4">
             
             {/* Results Count & Sort Dropdown */}
             <div className="flex items-center justify-between">
@@ -447,7 +448,7 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                       <div
                         key={service.id}
                         onClick={() => onSelectService(service)}
-                        className="bg-white rounded-3xl overflow-hidden border border-zinc-200/80 shadow-2xs hover:shadow-soft transition-all duration-200 flex flex-col justify-between group cursor-pointer hover:-translate-y-1"
+                        className="clay-card-interactive overflow-hidden flex flex-col justify-between group cursor-pointer hover:-translate-y-1"
                       >
                         {/* High-Resolution Cover Photo */}
                         <div className="h-44 w-full relative bg-zinc-100 overflow-hidden">
@@ -469,7 +470,7 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                           <button
                             type="button"
                             onClick={(e) => toggleFavorite(service.id, e)}
-                            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center transition-transform active:scale-90 cursor-pointer shadow-soft-xs"
+                            className="absolute top-3 right-3 w-8 h-8 rounded-full clay-badge-white flex items-center justify-center transition-transform active:scale-90 cursor-pointer shadow-soft-xs"
                             title="Save to favorites"
                           >
                             <Heart className={`w-4 h-4 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-zinc-600'}`} />
@@ -477,7 +478,7 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
 
                           {/* Price Tag on Photo */}
                           <div className="absolute bottom-3 left-3">
-                            <span className="text-sm font-black text-white bg-indigo-600/90 backdrop-blur-xs px-2.5 py-1 rounded-xl shadow-soft-xs">
+                            <span className="text-xs sm:text-sm font-black text-white clay-button-primary px-3 py-1 shadow-md">
                               ₹{service.price}{service.pricingType === 'hourly' || service.price < 500 ? '/hr' : ''}
                             </span>
                           </div>
@@ -560,8 +561,8 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
             {/* TAB 2: TASK REQUESTS LIST */}
             {activeTab === 'requests' && (
               filteredRequests.length === 0 ? (
-                <div className="bg-white rounded-3xl p-10 sm:p-12 text-center border border-zinc-200/80 shadow-2xs space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto text-2xl">
+                <div className="clay-card p-10 sm:p-12 text-center space-y-4">
+                  <div className="w-16 h-16 rounded-3xl clay-card-soft text-purple-600 flex items-center justify-center mx-auto text-2xl shadow-inner">
                     📋
                   </div>
                   <div className="space-y-1">
@@ -575,7 +576,7 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                   {onOpenPostRequest && (
                     <button
                       onClick={onOpenPostRequest}
-                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-soft cursor-pointer"
+                      className="px-6 py-3 clay-button-primary text-xs font-black cursor-pointer"
                     >
                       Post a Task Needed Now
                     </button>
@@ -586,7 +587,7 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                   {filteredRequests.map((req) => (
                     <div
                       key={req.id}
-                      className="bg-white rounded-2xl p-5 border border-zinc-200/90 shadow-2xs space-y-3 flex flex-col justify-between"
+                      className="clay-card-interactive p-5 sm:p-6 space-y-3 flex flex-col justify-between cursor-pointer"
                     >
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2">

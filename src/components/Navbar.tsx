@@ -11,12 +11,13 @@ import {
   Briefcase,
   Sparkles,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Wallet
 } from 'lucide-react';
 import { LocationPoint, UserProfile, AppNotification } from '../types';
 import { NeighborLyLogo } from './NeighborLyLogo';
 
-export type NavViewType = 'home' | 'browse' | 'seller' | 'messages' | 'orders' | 'profile' | 'ai' | 'admin' | 'auth';
+export type NavViewType = 'home' | 'browse' | 'seller' | 'messages' | 'orders' | 'profile' | 'wallet' | 'ai' | 'admin' | 'auth';
 
 interface NavbarProps {
   currentLocation: LocationPoint;
@@ -66,62 +67,124 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'seller', label: 'Become a Seller' },
     { id: 'messages', label: 'Messages', badge: unreadMessagesCount },
     { id: 'orders', label: 'Orders', badge: activeOrdersCount },
+    { id: 'wallet', label: 'Funds & Escrow' },
     { id: 'profile', label: 'Profile' },
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-zinc-200/80 shadow-2xs w-full max-w-full">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-6">
+    <header className="sticky top-0 z-40 clay-nav w-full max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-1 sm:gap-6 min-w-0">
         
         {/* Left Section: Brand Logo */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center shrink-0">
           <button 
             onClick={() => onNavigate('home')} 
             className="flex items-center group text-left cursor-pointer focus-visible:outline-none shrink-0"
             aria-label="NeighborLy Home"
           >
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:block">
               <NeighborLyLogo size="md" variant="full" />
+            </div>
+            <div className="block sm:hidden">
+              <NeighborLyLogo size="sm" variant="full" />
             </div>
           </button>
         </div>
 
         {/* Center Section: Primary Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6 lg:gap-8 shrink-0">
-          {navLinks.map((link) => {
-            const isActive = activeView === link.id;
-            return (
-              <button
-                key={link.id}
-                onClick={() => onNavigate(link.id as NavViewType)}
-                className={`relative py-5 text-sm font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isActive 
-                    ? 'text-indigo-900 font-bold' 
-                    : 'text-zinc-600 hover:text-zinc-950'
-                }`}
-              >
-                <span>{link.label}</span>
-                {Boolean(link.badge && link.badge > 0) && (
-                  <span className="w-2 h-2 rounded-full bg-pink-500" />
-                )}
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
-                )}
-              </button>
-            );
-          })}
+        <nav className="hidden md:flex items-center gap-2 lg:gap-6 shrink-0">
+          <button
+            onClick={() => onNavigate('browse')}
+            className={`relative py-5 px-1.5 text-xs lg:text-sm font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+              activeView === 'browse' 
+                ? 'text-indigo-900 font-bold' 
+                : 'text-zinc-600 hover:text-zinc-950'
+            }`}
+          >
+            <span>Browse</span>
+            {activeView === 'browse' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
+            )}
+          </button>
+
+          <button
+            onClick={() => onNavigate('seller')}
+            className={`relative py-5 px-1.5 text-xs lg:text-sm font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+              activeView === 'seller' 
+                ? 'text-indigo-900 font-bold' 
+                : 'text-zinc-600 hover:text-zinc-950'
+            }`}
+          >
+            <span>Become a Seller</span>
+            {activeView === 'seller' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              if (!currentUser) onOpenAuth('login');
+              else onNavigate('orders');
+            }}
+            className={`hidden lg:flex relative py-5 px-1.5 text-xs lg:text-sm font-medium transition-all cursor-pointer items-center gap-1.5 whitespace-nowrap ${
+              activeView === 'orders' 
+                ? 'text-indigo-900 font-bold' 
+                : 'text-zinc-600 hover:text-zinc-950'
+            }`}
+          >
+            <span>Orders</span>
+            {Boolean(activeOrdersCount && activeOrdersCount > 0) && (
+              <span className="w-4 h-4 rounded-full bg-pink-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {activeOrdersCount}
+              </span>
+            )}
+            {activeView === 'orders' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              if (!currentUser) onOpenAuth('login');
+              else onNavigate('wallet');
+            }}
+            className={`hidden xl:flex relative py-5 px-1.5 text-xs lg:text-sm font-medium transition-all cursor-pointer items-center gap-1.5 whitespace-nowrap ${
+              activeView === 'wallet' 
+                ? 'text-indigo-900 font-bold' 
+                : 'text-zinc-600 hover:text-zinc-950'
+            }`}
+          >
+            <span>Funds & Escrow</span>
+            {activeView === 'wallet' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
+            )}
+          </button>
         </nav>
 
         {/* Right Section: Action Buttons, Search Icon, Notification Bell, User Avatar */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           
+          {/* Real Detected Location Pill */}
+          <button
+            type="button"
+            onClick={onOpenLocationPicker}
+            className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full clay-pill text-xs font-bold text-zinc-700 hover:text-indigo-600 transition-all cursor-pointer"
+            title="Current detected neighborhood - Click to view or detect GPS"
+          >
+            <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+            <span className="truncate max-w-[110px] lg:max-w-[150px]">
+              {currentLocation.neighborhood || currentLocation.city}
+            </span>
+            <span className="text-[10px] text-zinc-400 font-mono">({radiusKm}km)</span>
+          </button>
+
           {/* Post a Task Button on Desktop */}
           {onOpenPostTask && (
             <button
               onClick={onOpenPostTask}
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-zinc-950 hover:bg-zinc-800 text-white transition-all shadow-soft cursor-pointer shrink-0"
+              className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 text-xs font-black clay-button-primary cursor-pointer shrink-0"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5 stroke-[3]" />
               <span>Post a Task</span>
             </button>
           )}
@@ -129,30 +192,44 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* AI Assistant Quick Pill */}
           <button
             onClick={onOpenAiAssistant}
-            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100/80 transition-all border border-indigo-200/70 cursor-pointer"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold clay-pill text-indigo-700 hover:text-indigo-900 cursor-pointer"
             title="Ask AI Assistant"
           >
             <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
             <span>AI Copilot</span>
           </button>
 
-          {/* Quick Search Button */}
+          {/* NeighborLy Funds Wallet Quick Pill */}
+          {currentUser && (
+            <button
+              type="button"
+              onClick={() => onNavigate('wallet')}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-black transition-all cursor-pointer shadow-2xs group"
+              title="NeighborLy Funds - Available Balance"
+            >
+              <Wallet className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform shrink-0" />
+              <span className="font-mono font-bold">₹{currentUser.walletBalance || 0}</span>
+              <span className="hidden sm:inline text-[10px] text-emerald-700 font-bold">Funds</span>
+            </button>
+          )}
+
+          {/* Quick Search Button (Desktop & Tablet only - Mobile uses bottom nav Explore & hero search) */}
           <button
             onClick={() => onNavigate('browse')}
-            className="w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200/80 text-zinc-700 flex items-center justify-center transition-all cursor-pointer"
+            className="hidden sm:flex w-8 h-8 sm:w-9 sm:h-9 rounded-full clay-pill text-zinc-700 hover:text-indigo-600 items-center justify-center cursor-pointer shrink-0"
             title="Search Services"
           >
-            <Search className="w-4 h-4 text-cyan-700" />
+            <Search className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-indigo-600" />
           </button>
 
           {/* Notification Bell with interactive dropdown */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="w-9 h-9 rounded-full bg-amber-50/80 hover:bg-amber-100/70 text-amber-700 flex items-center justify-center transition-all cursor-pointer relative"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full clay-pill text-amber-700 flex items-center justify-center cursor-pointer relative"
               title="Notifications"
             >
-              <Bell className="w-4 h-4 text-amber-600" />
+              <Bell className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-amber-600" />
               {unreadNotificationsCount > 0 && (
                 <span className="absolute -top-1 -right-1 px-1.5 py-0.2 min-w-4.5 h-4.5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
                   {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
@@ -162,7 +239,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {isNotificationsOpen && (
               <div 
-                className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-soft-xl border border-zinc-200/90 p-3 z-50 animate-in fade-in zoom-in-95 duration-150"
+                className="absolute right-0 mt-2 w-80 max-w-[calc(100%-1rem)] clay-card p-3 z-50 animate-in fade-in zoom-in-95 duration-150"
               >
                 <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
                   <div className="flex items-center gap-1.5">
@@ -263,7 +340,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {isUserMenuOpen && (
                 <div 
-                  className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-soft-xl border border-zinc-200/90 py-2 z-50 animate-in fade-in zoom-in-95 duration-150"
+                  className="absolute right-0 mt-2 w-64 max-w-[calc(100%-1rem)] bg-white rounded-2xl shadow-soft-xl border border-zinc-200/90 py-2 z-50 animate-in fade-in zoom-in-95 duration-150"
                   onClick={() => setIsUserMenuOpen(false)}
                 >
                   <div className="px-4 py-3 border-b border-zinc-100">
@@ -305,6 +382,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                       )}
                     </button>
                     <button
+                      onClick={() => onNavigate('wallet')}
+                      className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-emerald-800 flex items-center gap-2.5 cursor-pointer font-semibold"
+                    >
+                      <Wallet className="w-4 h-4 text-emerald-600" />
+                      <span>Fund Management & Escrow</span>
+                    </button>
+                    <button
                       onClick={() => onNavigate('messages')}
                       className="w-full text-left px-4 py-2.5 hover:bg-zinc-50 flex items-center gap-2.5 cursor-pointer font-medium"
                     >
@@ -338,19 +422,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               <button
                 onClick={() => onOpenAuth('login')}
-                className="px-4 py-2 text-xs font-bold text-zinc-800 hover:text-zinc-950 hover:bg-zinc-100/80 rounded-xl border border-zinc-200 transition-all cursor-pointer whitespace-nowrap"
+                className="px-2 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold text-zinc-800 hover:text-zinc-950 hover:bg-zinc-100/80 rounded-xl border border-zinc-200 transition-all cursor-pointer whitespace-nowrap"
               >
                 Login
               </button>
               <button
                 onClick={() => onOpenAuth('signup')}
-                className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-soft cursor-pointer whitespace-nowrap flex items-center gap-1"
+                className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-soft cursor-pointer whitespace-nowrap flex items-center gap-1"
               >
                 <span>Sign Up</span>
-                <span>→</span>
+                <span className="hidden sm:inline">→</span>
               </button>
             </div>
           )}
@@ -360,7 +444,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Mobile Bottom Sub-nav for direct access */}
-      <div className="md:hidden flex items-center justify-around border-t border-zinc-200/70 bg-white py-2 px-1 text-xs">
+      <div className="md:hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar border-t border-zinc-200/70 bg-white py-2 px-2.5 text-xs w-full max-w-full whitespace-nowrap">
         {navLinks.map((link) => {
           const isActive = activeView === link.id;
           return (
@@ -373,8 +457,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onNavigate(link.id as NavViewType);
                 }
               }}
-              className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-all ${
-                isActive ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-zinc-600'
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all shrink-0 whitespace-nowrap ${
+                isActive ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-zinc-600 hover:text-zinc-950'
               }`}
             >
               {link.label}

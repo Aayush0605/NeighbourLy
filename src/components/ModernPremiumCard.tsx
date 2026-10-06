@@ -50,7 +50,7 @@ export const ModernPremiumCard: React.FC<ModernPremiumCardProps> = ({
             Neighbor<span className="text-purple-400">Ly</span>
           </h2>
           <p className="text-[10px] sm:text-xs font-bold tracking-[0.2em] text-zinc-400 uppercase">
-            Students Helping Students
+            By Students
           </p>
         </div>
       </div>

@@ -316,12 +316,27 @@ export async function syncConversationMessageToCloud(
   }
 }
 
+export async function fetchConversationMessages(conversationId: string): Promise<Message[]> {
+  try {
+    const q = query(collection(db, 'conversations', conversationId, 'messages'));
+    const snap = await getDocs(q);
+    const list: Message[] = [];
+    snap.forEach((d) => {
+      list.push(d.data() as Message);
+    });
+    list.sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
+    return list;
+  } catch (e) {
+    return [];
+  }
+}
+
 export function subscribeToConversationMessages(
   conversationId: string,
   onUpdate: (messages: Message[]) => void
 ): () => void {
   const q = query(collection(db, 'conversations', conversationId, 'messages'));
-  return onSnapshot(
+  const unsub = onSnapshot(
     q,
     (snapshot) => {
       const list: Message[] = [];
@@ -335,6 +350,19 @@ export function subscribeToConversationMessages(
       console.warn('Realtime conversation messages subscription warning:', err);
     }
   );
+
+  // Background polling fallback every 2.5s for guaranteed delivery
+  const timer = setInterval(async () => {
+    const msgs = await fetchConversationMessages(conversationId);
+    if (msgs.length > 0) {
+      onUpdate(msgs);
+    }
+  }, 2500);
+
+  return () => {
+    unsub();
+    clearInterval(timer);
+  };
 }
 
 // Legacy/Direct order messages
@@ -347,12 +375,27 @@ export async function syncMessageToCloud(orderId: string, message: Message) {
   }
 }
 
+export async function fetchOrderMessages(orderId: string): Promise<Message[]> {
+  try {
+    const q = query(collection(db, 'orders', orderId, 'messages'));
+    const snap = await getDocs(q);
+    const list: Message[] = [];
+    snap.forEach((d) => {
+      list.push(d.data() as Message);
+    });
+    list.sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
+    return list;
+  } catch (e) {
+    return [];
+  }
+}
+
 export function subscribeToOrderMessages(
   orderId: string,
   onUpdate: (messages: Message[]) => void
 ): () => void {
   const q = query(collection(db, 'orders', orderId, 'messages'));
-  return onSnapshot(
+  const unsub = onSnapshot(
     q,
     (snapshot) => {
       const list: Message[] = [];
@@ -366,6 +409,19 @@ export function subscribeToOrderMessages(
       console.warn('Realtime order messages subscription warning:', err);
     }
   );
+
+  // Background polling fallback every 2.5s
+  const timer = setInterval(async () => {
+    const msgs = await fetchOrderMessages(orderId);
+    if (msgs.length > 0) {
+      onUpdate(msgs);
+    }
+  }, 2500);
+
+  return () => {
+    unsub();
+    clearInterval(timer);
+  };
 }
 
 // In-App Notifications

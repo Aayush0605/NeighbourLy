@@ -20,7 +20,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if true;
 
-      match /private/{docId} {
+      match /{allSubcollections=**} {
         allow read, write: if true;
       }
     }

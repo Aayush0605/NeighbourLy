@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Order, ServiceListing, TaskRequest, UserProfile } from '../types';
 import { NeighborLyLogo } from './NeighborLyLogo';
+import { EscrowWalletDashboard } from './EscrowWalletDashboard';
 
 interface MyTasksOrdersViewProps {
   currentUser: UserProfile;
@@ -23,6 +24,8 @@ interface MyTasksOrdersViewProps {
   onOpenPostService: () => void;
   onOpenPostRequest: () => void;
   onDeleteService: (serviceId: string) => void;
+  onUpdateUser?: (updated: UserProfile) => void;
+  showToast?: (msg: string) => void;
 }
 
 export const MyTasksOrdersView: React.FC<MyTasksOrdersViewProps> = ({
@@ -34,6 +37,8 @@ export const MyTasksOrdersView: React.FC<MyTasksOrdersViewProps> = ({
   onOpenPostService,
   onOpenPostRequest,
   onDeleteService,
+  onUpdateUser,
+  showToast,
 }) => {
   const [activeTab, setActiveTab] = useState<'orders' | 'my_services' | 'my_requests' | 'wallet'>('orders');
   const [upiId, setUpiId] = useState('neighbor@upi');
@@ -64,12 +69,12 @@ export const MyTasksOrdersView: React.FC<MyTasksOrdersViewProps> = ({
     setIsWithdrawing(true);
     setTimeout(() => {
       setIsWithdrawing(false);
-      alert(`Withdrawal of ₹${completedEarnings} processed to ${upiId}`);
+      showToast?.(`Withdrawal of ₹${completedEarnings} processed to ${upiId}`);
     }, 1000);
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 w-full max-w-full overflow-x-hidden">
       
       {/* Header Profile Summary with generous radius and soft depth */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/80 shadow-soft flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -115,7 +120,7 @@ export const MyTasksOrdersView: React.FC<MyTasksOrdersViewProps> = ({
       </div>
 
       {/* Segmented Navigation Tabs (Edge-to-edge scroll on mobile) */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-zinc-200/70 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-zinc-200/70 no-scrollbar w-full max-w-full">
         {[
           { id: 'orders', label: 'Active Tasks & Orders', count: myOrders.length },
           { id: 'my_services', label: 'My Offered Skills', count: myServices.length },
@@ -312,75 +317,14 @@ export const MyTasksOrdersView: React.FC<MyTasksOrdersViewProps> = ({
         </div>
       )}
 
-      {/* Tab 4: Wallet & Escrow Payouts */}
+      {/* Tab 4: Wallet & Escrow Payouts (Proper Escrow Services with 8% Protection & Verified UPI) */}
       {activeTab === 'wallet' && (
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-          <div className="md:col-span-6 bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/80 shadow-soft space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-900 shadow-2xs">
-                <Wallet className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-zinc-950">Neighborly Escrow Balance</h3>
-                <p className="text-xs text-zinc-500">Earnings from completed tasks</p>
-              </div>
-            </div>
-
-            <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-200/80 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-zinc-500">Available for Payout</span>
-                <span className="text-2xl font-heading font-extrabold text-zinc-950 tabular-nums">
-                  ₹{completedEarnings}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-200/60">
-                <span>In-Escrow (Tasks in Progress)</span>
-                <span className="font-semibold text-zinc-800 tabular-nums">₹{escrowHold}</span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-zinc-900 block">UPI ID for Direct Payout</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={upiId}
-                  onChange={(e) => setUpiId(e.target.value)}
-                  className="flex-1 px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white"
-                />
-                <button
-                  type="button"
-                  disabled={completedEarnings <= 0 || isWithdrawing}
-                  onClick={handleWithdraw}
-                  className="px-5 py-2.5 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-white rounded-2xl text-xs font-bold transition-all shadow-soft cursor-pointer shrink-0"
-                >
-                  {isWithdrawing ? 'Sending...' : 'Withdraw'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="md:col-span-6 bg-zinc-50/80 rounded-3xl p-6 sm:p-8 border border-zinc-200/80 shadow-2xs space-y-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-zinc-950">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>How Escrow-Lite Protects You</span>
-            </div>
-            <ul className="space-y-3 text-xs text-zinc-600 leading-relaxed">
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-950 mt-1.5 shrink-0" />
-                <span>When a client hires you, the money is locked safely in escrow before work begins.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-950 mt-1.5 shrink-0" />
-                <span>Once you complete the task and the neighbor confirms, funds are instantly added to your payout balance.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-950 mt-1.5 shrink-0" />
-                <span>Instant 0% fee payouts directly to your UPI ID without intermediaries.</span>
-              </li>
-            </ul>
-          </div>
-        </div>
+        <EscrowWalletDashboard
+          currentUser={currentUser}
+          orders={orders}
+          onUpdateUser={onUpdateUser || (() => {})}
+          showToast={showToast || ((_msg) => {})}
+        />
       )}
 
     </div>

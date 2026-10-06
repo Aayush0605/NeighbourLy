@@ -70,6 +70,8 @@ import { PostRequestModal } from './components/PostRequestModal';
 import { LocationPickerModal } from './components/LocationPickerModal';
 import { AuthModal } from './components/AuthModal';
 import { ChatOrderModal } from './components/ChatOrderModal';
+import { EscrowPaymentModal } from './components/EscrowPaymentModal';
+import { EscrowWalletDashboard } from './components/EscrowWalletDashboard';
 import { AiAssistantModal } from './components/AiAssistantModal';
 import { AiChatbotWidget } from './components/AiChatbotWidget';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -90,13 +92,33 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | 'forgot_password' | 'admin'>('login');
 
-  // Location State
+  // Location State (Auto-detects real user city/location instead of static Bengaluru fallback)
   const [currentLocation, setCurrentLocation] = useState<LocationPoint>(() => {
+    try {
+      const cached = localStorage.getItem('neighborly_real_location');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.city) return parsed;
+      }
+    } catch (e) {}
     return currentUser?.location || DEFAULT_LOCATION;
   });
   const [radiusKm, setRadiusKm] = useState<number>(5);
   const [isWorkFromCurrentLocation, setIsWorkFromCurrentLocation] = useState<boolean>(true);
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
+
+  // Auto-detect real location on mount via GPS & IP fallback
+  useEffect(() => {
+    let isMounted = true;
+    detectBrowserLocation().then((loc) => {
+      if (isMounted && loc && loc.city) {
+        setCurrentLocation(loc);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Navigation View & AI Chatbot State
   const [activeView, setActiveView] = useState<NavViewType>('home');
@@ -240,6 +262,36 @@ export default function App() {
     return () => unsub();
   }, [activeChatOrderId]);
 
+  // Instantaneous Multi-Tab & Window Realtime Chat Sync via BroadcastChannel
+  useEffect(() => {
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('neighborly_realtime_chat');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'NEW_CHAT_MESSAGE') {
+          const { targetId, message } = event.data;
+          if (activeConversationId === targetId || activeConversationId === message.conversationId) {
+            setConversationMessages((prev) => {
+              if (prev.some((m) => m.id === message.id)) return prev;
+              return [...prev, message];
+            });
+          }
+          if (activeChatOrderId === targetId || activeChatOrderId === message.orderId) {
+            setActiveOrderMessages((prev) => {
+              if (prev.some((m) => m.id === message.id)) return prev;
+              return [...prev, message];
+            });
+          }
+        }
+      };
+    } catch (e) {}
+    return () => {
+      try {
+        bc?.close();
+      } catch (e) {}
+    };
+  }, [activeConversationId, activeChatOrderId]);
+
   // Realtime subscription for User Notifications
   const prevNotifsCountRef = useRef<number>(-1);
   useEffect(() => {
@@ -259,6 +311,7 @@ export default function App() {
 
   // Active Modals & Public Profile Inspector
   const [selectedService, setSelectedService] = useState<ServiceListing | null>(null);
+  const [escrowPaymentTarget, setEscrowPaymentTarget] = useState<{ service: ServiceListing; withRush: boolean } | null>(null);
   const [isPostServiceOpen, setIsPostServiceOpen] = useState(false);
   const [isPostRequestOpen, setIsPostRequestOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -329,13 +382,13 @@ export default function App() {
 
   // Dynamic SEO, OpenGraph, and Twitter Meta Tags Synchronization
   useEffect(() => {
-    const neighborhood = currentLocation.neighborhood || currentLocation.city || 'Neighborhood';
-    const city = currentLocation.city || 'Bengaluru';
+    const neighborhood = currentLocation.neighborhood || currentLocation.city || 'Campus Neighborhood';
+    const city = currentLocation.city || 'Local City';
 
     if (selectedService) {
       updateDynamicMetaTags({
         title: `${selectedService.title} by ${selectedService.provider?.name || 'Student'} (₹${selectedService.price}) — NeighborLy`,
-        description: `${selectedService.description?.slice(0, 140)}... Verified student neighbor in ${selectedService.location?.neighborhood || neighborhood}. Escrow-Lite protected.`,
+        description: `${selectedService.description?.slice(0, 140)}... Verified student neighbor in ${selectedService.location?.neighborhood || neighborhood}. Escrow protected.`,
         image: selectedService.provider?.avatar,
         type: 'product',
       });
@@ -346,7 +399,7 @@ export default function App() {
       case 'home':
         updateDynamicMetaTags({
           title: `NeighborLy — Hyperlocal Skills & Gigs in ${neighborhood}, ${city}`,
-          description: `Find trusted student neighbors for homework help, web development, art, crafts & tutoring near ${neighborhood} with Escrow-Lite safety.`,
+          description: `Find trusted student neighbors for homework help, web development, art, crafts & tutoring near ${neighborhood} with Escrow Protection safety.`,
           type: 'website',
         });
         break;
@@ -355,7 +408,7 @@ export default function App() {
         const catText = selectedCategory !== 'All' ? selectedCategory : 'Verified Services';
         updateDynamicMetaTags({
           title: `Explore ${catText} near ${neighborhood} — NeighborLy`,
-          description: `Browse ${services.length} active neighborhood skill listings and student gigs within ${radiusKm}km of ${neighborhood}, ${city}. Book with Escrow-Lite.`,
+          description: `Browse ${services.length} active neighborhood skill listings and student gigs within ${radiusKm}km of ${neighborhood}, ${city}. Book with Escrow Services.`,
           type: 'website',
         });
         break;
@@ -364,7 +417,7 @@ export default function App() {
       case 'seller':
         updateDynamicMetaTags({
           title: `Become a Student Seller — NeighborLy`,
-          description: `Offer your skills to neighbors, set your hourly price, and earn on your schedule with 100% Escrow-Lite payment protection.`,
+          description: `Offer your skills to neighbors, set your hourly price, and earn on your schedule with 100% Escrow Protection.`,
           type: 'website',
         });
         break;
@@ -380,7 +433,7 @@ export default function App() {
       case 'orders':
         updateDynamicMetaTags({
           title: `My Tasks & Orders (${orders.length}) — NeighborLy`,
-          description: `Track your active neighborhood service orders, milestones, and release Escrow-Lite payments upon task sign-off.`,
+          description: `Track your active neighborhood service orders, milestones, and release Escrow payments upon task sign-off.`,
           type: 'website',
         });
         break;
@@ -404,7 +457,7 @@ export default function App() {
       default:
         updateDynamicMetaTags({
           title: `NeighborLy — Hyperlocal Student Skills & Task Marketplace`,
-          description: `Peer-to-peer campus and neighborhood marketplace connecting students with local tasks and gigs with Escrow-Lite protection.`,
+          description: `Peer-to-peer campus and neighborhood marketplace connecting students with local tasks and gigs with Proper Escrow Services protection.`,
           type: 'website',
         });
     }
@@ -572,14 +625,23 @@ export default function App() {
     }
   };
 
-  // Book Service (Create Escrow Order via secure server authority)
+  // Book Service Trigger (Opens Proper Escrow Services Accept Money & 8% Protection Modal)
   const handleRequestOrder = async (service: ServiceListing, withRush: boolean) => {
     if (!currentUser) {
       requireAuth('login');
       return;
     }
+    // Launch Proper Escrow Services deposit modal to accept money with transparent 8% commission breakdown
+    setEscrowPaymentTarget({ service, withRush });
+  };
+
+  // Confirm Escrow Services Deposit & Authoritative Order Creation
+  const handleConfirmEscrowPayment = async (service: ServiceListing, withRush: boolean) => {
+    if (!currentUser) return;
 
     const orderAmount = withRush ? service.price + (service.rushPrice || 100) : service.price;
+    const commissionFee = Math.round(orderAmount * 0.08);
+    const sellerPayout = Math.max(0, orderAmount - commissionFee);
 
     // Authoritative Server Order Creation
     const serverResult = await createOrderViaServer({
@@ -624,7 +686,7 @@ export default function App() {
       senderId: currentUser.id,
       senderName: currentUser.name,
       senderAvatar: currentUser.avatar,
-      text: `Hello! I have booked your service "${service.title}". ₹${orderAmount} has been deposited into Escrow-Lite protection (Demo).`,
+      text: `Hello! I have booked your service "${service.title}". ₹${orderAmount} has been deposited into secure Escrow Protection. (Platform fee: 8% [₹${commissionFee}], net payout to student: ₹${sellerPayout} upon work completion approval).`,
       timestamp: new Date().toISOString(),
       isSystem: true,
     };
@@ -658,7 +720,7 @@ export default function App() {
           email: service.provider?.email,
         },
       },
-      lastMessage: `Booked: ${service.title} (₹${orderAmount})`,
+      lastMessage: `Booked: ${service.title} (₹${orderAmount} in Escrow)`,
       lastSenderId: currentUser.id,
       lastSenderName: currentUser.name,
       updatedAt: new Date().toISOString(),
@@ -676,7 +738,7 @@ export default function App() {
       id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       userId: service.providerId,
       title: `New Order: ${service.title}`,
-      body: `${currentUser.name} booked your service! ₹${orderAmount} held in Escrow-Lite.`,
+      body: `${currentUser.name} booked your service! ₹${orderAmount} deposited into Escrow Protection (Net payout ₹${sellerPayout} after 8% commission).`,
       type: 'order',
       linkView: 'orders',
       linkId: orderId,
@@ -687,8 +749,9 @@ export default function App() {
     });
 
     setSelectedService(null);
+    setEscrowPaymentTarget(null);
     setActiveChatOrderId(orderId);
-    showToast(`Order initiated! ₹${orderAmount} safely placed in Escrow-Lite.`);
+    showToast(`Order initiated! ₹${orderAmount} safely placed in Escrow Protection.`);
   };
 
   // Direct peer-to-peer message starter
@@ -792,6 +855,13 @@ export default function App() {
     // Update local state immediately for responsive feel
     setConversationMessages((prev) => [...prev, newMsg]);
     setActiveOrderMessages((prev) => [...prev, newMsg]);
+
+    // Broadcast across all open browser windows and tabs instantly (0ms latency)
+    try {
+      const bc = new BroadcastChannel('neighborly_realtime_chat');
+      bc.postMessage({ type: 'NEW_CHAT_MESSAGE', targetId, message: newMsg });
+      bc.close();
+    } catch (e) {}
 
     // Ensure parent conversation exists in Firestore before sending
     const currentConv = conversations.find((c) => c.id === targetId);
@@ -955,7 +1025,7 @@ export default function App() {
     showToast('Task marked as delivered to client!');
   };
 
-  // Complete Order (Approve Escrow Release)
+  // Complete Order (Approve Escrow Release & Cut 8% Commission)
   const handleCompleteOrder = async (orderId: string) => {
     await updateOrderStatusViaServer(orderId, 'release', currentUser?.id);
     const ord = orders.find((o) => o.id === orderId);
@@ -969,14 +1039,18 @@ export default function App() {
       })
     );
 
-    if (currentUser) {
+    if (currentUser && ord) {
+      const gross = ord.amount || 0;
+      const commission = Math.round(gross * 0.08); // Exactly 8% platform fee
+      const netPayout = Math.max(0, gross - commission); // 92% student payout
+
       const sysMsg: Message = {
         id: `msg_${Date.now()}`,
         orderId,
         senderId: 'system',
         senderName: 'Neighborly Escrow',
         senderAvatar: '',
-        text: `Escrow payment has been released to the student provider! Thank you for supporting your neighbor.`,
+        text: `Escrow payment of ₹${gross} approved and released! Escrow commission (8%): ₹${commission}. Net student earnings of ₹${netPayout} added to your Escrow Dashboard to transfer to your verified UPI ID.`,
         timestamp: new Date().toISOString(),
         isSystem: true,
       };
@@ -984,24 +1058,22 @@ export default function App() {
       await syncMessageToCloud(orderId, sysMsg);
 
       // Notify the seller
-      if (ord) {
-        await syncNotificationToCloud({
-          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-          userId: ord.sellerId,
-          title: `Escrow Payment Released! (₹${ord.amount})`,
-          body: `${currentUser.name} approved the deliverable for "${ord.serviceTitle}". Earnings released!`,
-          type: 'order',
-          linkView: 'orders',
-          linkId: orderId,
-          read: false,
-          createdAt: new Date().toISOString(),
-          actorName: currentUser.name,
-          actorAvatar: currentUser.avatar,
-        });
-      }
+      await syncNotificationToCloud({
+        id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId: ord.sellerId,
+        title: `Escrow Released: ₹${netPayout} Net (8% Fee Deducted)`,
+        body: `${currentUser.name} approved the deliverable for "${ord.serviceTitle}". ₹${netPayout} is available in your Escrow Dashboard to transfer to verified UPI.`,
+        type: 'order',
+        linkView: 'orders',
+        linkId: orderId,
+        read: false,
+        createdAt: new Date().toISOString(),
+        actorName: currentUser.name,
+        actorAvatar: currentUser.avatar,
+      });
     }
 
-    showToast('Payment released to student provider! Thank you.');
+    showToast('Payment released to student provider! (8% platform fee applied)');
   };
 
   // Submit Review
@@ -1041,11 +1113,11 @@ export default function App() {
   const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-zinc-950 flex flex-col font-sans selection:bg-zinc-950 selection:text-white pb-20 md:pb-0 w-full max-w-full overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#FAFAFA] text-zinc-950 flex flex-col font-sans selection:bg-zinc-950 selection:text-white pb-20 md:pb-0 w-full max-w-full overflow-x-clip overflow-x-hidden relative">
       
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 right-4 z-50 bg-zinc-950 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-soft-xl flex items-center gap-2.5 animate-in slide-in-from-top-3 fade-in duration-200 border border-zinc-800 max-w-[calc(100vw-2rem)]">
+        <div className="fixed top-20 right-4 z-50 bg-zinc-950 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-soft-xl flex items-center gap-2.5 animate-in slide-in-from-top-3 fade-in duration-200 border border-zinc-800 max-w-[calc(100%-2rem)]">
           <Check className="w-4 h-4 text-emerald-400 shrink-0" />
           <span className="truncate">{toastMessage}</span>
         </div>
@@ -1094,7 +1166,7 @@ export default function App() {
       />
 
       {/* Main View Router */}
-      <main className="flex-1 w-full max-w-full overflow-x-hidden">
+      <main className="flex-1 w-full max-w-full overflow-x-clip overflow-x-hidden">
         
         {/* VIEW 1: HOME LANDING */}
         {activeView === 'home' && (
@@ -1233,7 +1305,62 @@ export default function App() {
             onOpenOrderChat={(id) => setActiveChatOrderId(id)}
             onNavigateBrowse={() => setActiveView('browse')}
             onReleaseEscrow={handleCompleteOrder}
+            onUpdateUser={handleUpdateUserProfile}
+            showToast={showToast}
           />
+        )}
+
+        {/* VIEW: FUNDS & ESCROW WALLET (Direct Fund Management & Payouts) */}
+        {activeView === 'wallet' && (
+          <div className="bg-[#FAF8F5] min-h-[calc(100vh-4rem)] py-6 sm:py-10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-200">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-heading font-black text-zinc-950">
+                    Funds & Escrow Management
+                  </h1>
+                  <p className="text-xs sm:text-sm text-zinc-500 mt-0.5">
+                    Authorized payment gateway, secured Escrow Protection, 8% platform fee breakdown, and verified UPI bank transfers
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveView('browse')}
+                  className="px-4 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl cursor-pointer self-start sm:self-center transition-all"
+                >
+                  Explore Services →
+                </button>
+              </div>
+
+              {currentUser ? (
+                <EscrowWalletDashboard
+                  currentUser={currentUser}
+                  orders={orders}
+                  onUpdateUser={handleUpdateUserProfile}
+                  showToast={showToast}
+                  onNavigate={(v) => setActiveView(v)}
+                />
+              ) : (
+                <div className="max-w-md mx-auto my-12 bg-white rounded-3xl p-8 border border-zinc-200/90 shadow-soft text-center space-y-4">
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto text-2xl">
+                    💳
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-black text-zinc-950">Sign In to Access Funds & Wallet</h3>
+                    <p className="text-xs text-zinc-500">
+                      Manage your Escrow deposits, link your verified UPI for payouts, and view audited transaction logs.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => requireAuth('login')}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-2xl shadow-soft cursor-pointer transition-all"
+                  >
+                    Log In to Wallet
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* VIEW 6: STUDENT PORTFOLIO & DASHBOARD */}
@@ -1278,67 +1405,6 @@ export default function App() {
                   >
                     Create New Account
                   </button>
-                </div>
-                <div className="pt-3 border-t border-zinc-100">
-                  <p className="text-[11px] text-zinc-400 font-semibold mb-2">Or test 1-click profiles:</p>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <button
-                      onClick={() => {
-                        const demoUser: UserProfile = {
-                          id: 'user_aanya',
-                          userId: 'aanya_student',
-                          name: 'Aanya S.',
-                          email: 'aanya.s@du.ac.in',
-                          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-                          location: currentLocation,
-                          authProvider: 'password',
-                          verified: true,
-                          role: 'user',
-                          trustScore: 96,
-                          verificationTier: 'verified_student',
-                          studentVerified: true,
-                          studentUniversity: 'Delhi University / Campus',
-                          studentMajor: 'Economics & Math',
-                          tasksCompleted: 14,
-                          rating: 4.9,
-                          reviewCount: 14,
-                          bio: 'College student offering tutoring, presentation slides, notes review, and academic assistance.',
-                          joinedDate: 'Joined Aug 2026',
-                        };
-                        handleAuthSuccess(demoUser);
-                      }}
-                      className="p-2 bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold rounded-xl border border-purple-200 cursor-pointer"
-                    >
-                      🎓 Student Seller
-                    </button>
-                    <button
-                      onClick={() => {
-                        const demoUser: UserProfile = {
-                          id: 'user_alex',
-                          userId: 'alex_buyer',
-                          name: 'Alex M.',
-                          email: 'alex.neighbor@gmail.com',
-                          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-                          location: currentLocation,
-                          authProvider: 'password',
-                          verified: true,
-                          role: 'user',
-                          trustScore: 90,
-                          verificationTier: 'verified_neighbor',
-                          studentVerified: false,
-                          tasksCompleted: 8,
-                          rating: 4.8,
-                          reviewCount: 8,
-                          bio: 'Local neighbor hiring college students for tech, design, and errand tasks with Escrow-Lite safety.',
-                          joinedDate: 'Joined Sep 2026',
-                        };
-                        handleAuthSuccess(demoUser);
-                      }}
-                      className="p-2 bg-zinc-50 hover:bg-zinc-100 text-zinc-800 font-bold rounded-xl border border-zinc-200 cursor-pointer"
-                    >
-                      🏡 Neighbor Client
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1457,6 +1523,19 @@ export default function App() {
         />
       )}
 
+      {/* Proper Escrow Services Deposit Modal: Accept money & 8% commission breakdown */}
+      {escrowPaymentTarget && currentUser && (
+        <EscrowPaymentModal
+          service={escrowPaymentTarget.service}
+          withRush={escrowPaymentTarget.withRush}
+          currentUser={currentUser}
+          onClose={() => setEscrowPaymentTarget(null)}
+          onConfirmPayment={handleConfirmEscrowPayment}
+          onUpdateUser={handleUpdateUserProfile}
+          onNavigate={(v) => setActiveView(v)}
+        />
+      )}
+
       {activeChatOrderId && activeOrder && currentUser && (
         <ChatOrderModal
           order={activeOrder}
@@ -1476,8 +1555,11 @@ export default function App() {
           user={inspectedUser || currentUser!}
           isOpen={isProfileModalOpen}
           isCurrentUser={currentUser?.id === (inspectedUser?.id || currentUser?.id)}
+          currentUser={currentUser}
+          orders={orders}
           onClose={() => setIsProfileModalOpen(false)}
           onUpdateUser={handleUpdateUserProfile}
+          showToast={showToast}
         />
       )}
 
@@ -1488,6 +1570,10 @@ export default function App() {
           isOpen={isPublicUserModalOpen}
           onClose={() => setIsPublicUserModalOpen(false)}
           services={services}
+          currentUser={currentUser}
+          orders={orders}
+          onUpdateUser={handleUpdateUserProfile}
+          showToast={showToast}
           onOpenMessage={() => {
             setIsPublicUserModalOpen(false);
             if (!currentUser) requireAuth('login');
@@ -1501,16 +1587,16 @@ export default function App() {
       )}
 
       {/* Clean Minimalist Footer */}
-      <footer className="bg-white border-t border-zinc-200/80 mt-16 sm:mt-24 py-14 sm:py-16 text-zinc-500 text-xs">
+      <footer className="bg-white border-t border-zinc-200/80 mt-16 sm:mt-24 py-14 sm:py-16 text-zinc-500 text-xs w-full max-w-full overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-4 gap-10">
           <div className="space-y-4">
-            <NeighborLyLogo size="md" showTagline={true} tagline="Students Helping Students" />
+            <NeighborLyLogo size="md" showTagline={true} tagline="By Students" />
             <p className="text-zinc-500 leading-relaxed text-xs">
               Hyperlocal student skills and task marketplace. Connect with nearby students and neighbors to get help affordably and reliably.
             </p>
             <div className="flex items-center gap-2 text-xs text-zinc-700 bg-zinc-100/80 px-3 py-1.5 rounded-xl border border-zinc-200/70 w-fit font-medium">
               <Lock className="w-3.5 h-3.5 text-zinc-600" />
-              <span>Escrow-Lite Protected</span>
+              <span>Escrow Protected</span>
             </div>
           </div>
 
@@ -1529,7 +1615,7 @@ export default function App() {
             <ul className="space-y-2.5">
               <li><button onClick={() => { setAuthModalMode('signup'); setIsAuthModalOpen(true); }} className="hover:text-zinc-950 cursor-pointer">College ID & Email Verification</button></li>
               <li><button onClick={() => setIsLocationPickerOpen(true)} className="hover:text-zinc-950 cursor-pointer">Work From Current Location</button></li>
-              <li><button onClick={() => showToast('Escrow-Lite holds funds until you approve the task.')} className="hover:text-zinc-950 cursor-pointer">Escrow-Lite Protection</button></li>
+              <li><button onClick={() => showToast('Escrow holds funds securely until you approve the completed task.')} className="hover:text-zinc-950 cursor-pointer">Escrow Services Protection</button></li>
               <li><button onClick={() => setActiveView('ai')} className="hover:text-zinc-950 cursor-pointer">AI Real-Time Problem Solver</button></li>
             </ul>
           </div>
@@ -1558,7 +1644,7 @@ export default function App() {
           <div className="flex items-center gap-4 text-xs">
             <button onClick={() => showToast('Privacy Policy: User location and college verification data are securely encrypted.')} className="hover:text-zinc-600 transition-colors cursor-pointer">Privacy Policy</button>
             <span>·</span>
-            <button onClick={() => showToast('Terms of Service: All peer transactions are guarded with Escrow-Lite protection.')} className="hover:text-zinc-600 transition-colors cursor-pointer">Terms of Service</button>
+            <button onClick={() => showToast('Terms of Service: All peer transactions are guarded with Escrow Protection.')} className="hover:text-zinc-600 transition-colors cursor-pointer">Terms of Service</button>
             <span>·</span>
             <button onClick={() => showToast('Community Guidelines: Zero tolerance for scams, honest reviews, mutual peer respect.')} className="hover:text-zinc-600 transition-colors cursor-pointer">Community Guidelines</button>
           </div>

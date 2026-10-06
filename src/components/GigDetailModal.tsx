@@ -270,9 +270,9 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
                     <div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-bold text-zinc-950">Total Escrow Amount</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Demo</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">Escrow Protected</span>
                       </div>
-                      <p className="text-[10px] text-zinc-400">Simulated hold until you approve completion</p>
+                      <p className="text-[10px] text-zinc-500">Held safely in Escrow vault until delivery approval</p>
                     </div>
                     <span className="text-2xl sm:text-3xl font-heading font-extrabold text-zinc-950 tabular-nums">
                       ₹{totalPrice}
@@ -285,10 +285,10 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
                   <button
                     type="button"
                     onClick={handleBookClick}
-                    className="w-full py-3.5 bg-zinc-950 hover:bg-zinc-800 text-white rounded-2xl text-xs sm:text-sm font-semibold shadow-soft hover:shadow-soft-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
+                    className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
                   >
                     <Lock className="w-4 h-4" />
-                    <span>Book with Escrow-Lite (Demo)</span>
+                    <span>Pay & Book with Escrow Protection</span>
                   </button>
 
                   {onOpenMessage && service.provider && (
@@ -306,8 +306,8 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
                   )}
                 </div>
 
-                <p className="text-[11px] text-center text-zinc-400 leading-snug">
-                  🛡️ Simulated demo payment held in Escrow-Lite and released only when you confirm the service is delivered.
+                <p className="text-[11px] text-center text-zinc-500 leading-snug">
+                  🛡️ 100% payment accepted & secured in Escrow (8% platform fee reserved, released to student upon delivery approval).
                 </p>
 
               </div>

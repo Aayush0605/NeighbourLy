@@ -1,16 +1,16 @@
 import { LocationPoint } from '../types';
 
 /**
- * Default fallback location (e.g., Central Bangalore/Koramangala or Metro hub)
+ * Default fallback location if no GPS or network is available
  */
 export const DEFAULT_LOCATION: LocationPoint = {
-  lat: 12.9352,
-  lng: 77.6245,
-  neighborhood: 'Koramangala 4th Block',
-  city: 'Bengaluru',
-  address: 'Koramangala, Bengaluru, Karnataka',
-  state: 'Karnataka',
-  pincode: '560034',
+  lat: 28.6139,
+  lng: 77.2090,
+  neighborhood: 'Campus & Neighborhood Area',
+  city: 'Local City',
+  address: 'Campus & Neighborhood Area, Local City',
+  state: '',
+  pincode: '',
 };
 
 export const POPULAR_LOCATIONS: LocationPoint[] = [
@@ -116,22 +116,137 @@ function deg2rad(deg: number): number {
 }
 
 /**
- * Detect user's current GPS location via browser API
+ * Detect user's real current location via browser GPS API with automatic IP-based fallback
+ * Ensures users in any city/region see their genuine location instead of a fixed default.
  */
 export async function detectBrowserLocation(): Promise<LocationPoint> {
-  return new Promise((resolve, reject) => {
+  // 0. Check if real location was already detected and stored
+  try {
+    const cached = localStorage.getItem('neighborly_real_location');
+    if (cached) {
+      const parsed = JSON.parse(cached) as LocationPoint;
+      if (parsed && parsed.city) {
+        return parsed;
+      }
+    }
+  } catch (e) {}
+
+  // Helper 1: Query first-party server detection endpoint (/api/detect-location)
+  const fetchServerLocation = async (): Promise<LocationPoint | null> => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const res = await fetch('/api/detect-location', { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.city && data.city !== 'Your Campus City') {
+          const pt: LocationPoint = {
+            lat: Number(data.lat) || DEFAULT_LOCATION.lat,
+            lng: Number(data.lng) || DEFAULT_LOCATION.lng,
+            city: data.city,
+            neighborhood: data.neighborhood || data.city,
+            address: data.address || `${data.city}, ${data.state || ''}`,
+            state: data.state || '',
+            pincode: data.pincode || '',
+          };
+          try {
+            localStorage.setItem('neighborly_real_location', JSON.stringify(pt));
+          } catch (e) {}
+          return pt;
+        }
+      }
+    } catch (e) {}
+    return null;
+  };
+
+  // Helper 2: Try IP-based Geolocation fallbacks
+  const fetchIpLocation = async (): Promise<LocationPoint | null> => {
+    const serverLoc = await fetchServerLocation();
+    if (serverLoc) return serverLoc;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch('https://freeipapi.com/api/json', { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.cityName) {
+          const point: LocationPoint = {
+            lat: Number(data.latitude) || DEFAULT_LOCATION.lat,
+            lng: Number(data.longitude) || DEFAULT_LOCATION.lng,
+            city: data.cityName,
+            neighborhood: data.regionName || data.cityName,
+            address: `${data.cityName}, ${data.regionName || data.countryName}`,
+            state: data.regionName,
+            pincode: data.zipCode || '',
+          };
+          try {
+            localStorage.setItem('neighborly_real_location', JSON.stringify(point));
+          } catch (e) {}
+          return point;
+        }
+      }
+    } catch (err) {
+      try {
+        const controller2 = new AbortController();
+        const timeoutId2 = setTimeout(() => controller2.abort(), 3000);
+        const res2 = await fetch('https://ipapi.co/json/', { signal: controller2.signal });
+        clearTimeout(timeoutId2);
+        if (res2.ok) {
+          const data2 = await res2.json();
+          if (data2 && data2.city) {
+            const point: LocationPoint = {
+              lat: Number(data2.latitude) || DEFAULT_LOCATION.lat,
+              lng: Number(data2.longitude) || DEFAULT_LOCATION.lng,
+              city: data2.city,
+              neighborhood: data2.region || data2.city,
+              address: `${data2.city}, ${data2.region || data2.country_name}`,
+              state: data2.region,
+              pincode: data2.postal || '',
+            };
+            try {
+              localStorage.setItem('neighborly_real_location', JSON.stringify(point));
+            } catch (e) {}
+            return point;
+          }
+        }
+      } catch (e) {}
+    }
+    return null;
+  };
+
+  // 1. Try Browser GPS first
+  return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      resolve(DEFAULT_LOCATION);
+      fetchIpLocation().then((ipLoc) => resolve(ipLoc || DEFAULT_LOCATION));
       return;
     }
 
+    let hasResolved = false;
+
+    // Timeout safety fallback to IP location after 3.5 seconds
+    const fallbackTimer = setTimeout(async () => {
+      if (!hasResolved) {
+        hasResolved = true;
+        const ipLoc = await fetchIpLocation();
+        resolve(ipLoc || DEFAULT_LOCATION);
+      }
+    }, 3500);
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        if (hasResolved) return;
+        hasResolved = true;
+        clearTimeout(fallbackTimer);
+
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
 
         try {
-          // Attempt reverse geocode using free OpenStreetMap Nominatim with fast timeout
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 3500);
 
@@ -157,9 +272,10 @@ export async function detectBrowserLocation(): Promise<LocationPoint> {
               addr.town ||
               addr.municipality ||
               addr.county ||
-              'Local Area';
+              addr.state_district ||
+              'Local City';
 
-            resolve({
+            const detectedPoint: LocationPoint = {
               lat,
               lng,
               neighborhood,
@@ -167,11 +283,23 @@ export async function detectBrowserLocation(): Promise<LocationPoint> {
               address: data.display_name?.split(',').slice(0, 3).join(', ') || `${neighborhood}, ${city}`,
               state: addr.state,
               pincode: addr.postcode,
-            });
+            };
+
+            try {
+              localStorage.setItem('neighborly_real_location', JSON.stringify(detectedPoint));
+            } catch (e) {}
+
+            resolve(detectedPoint);
             return;
           }
         } catch {
-          // Fallback to coordinates
+          // OpenStreetMap failed, try IP fallback
+        }
+
+        const ipLoc = await fetchIpLocation();
+        if (ipLoc) {
+          resolve(ipLoc);
+          return;
         }
 
         resolve({
@@ -182,11 +310,14 @@ export async function detectBrowserLocation(): Promise<LocationPoint> {
           address: `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`,
         });
       },
-      (err) => {
-        // Permission denied or unavailable
-        resolve(DEFAULT_LOCATION);
+      async (_err) => {
+        if (hasResolved) return;
+        hasResolved = true;
+        clearTimeout(fallbackTimer);
+        const ipLoc = await fetchIpLocation();
+        resolve(ipLoc || DEFAULT_LOCATION);
       },
-      { timeout: 6000, enableHighAccuracy: true }
+      { timeout: 4000, enableHighAccuracy: true }
     );
   });
 }

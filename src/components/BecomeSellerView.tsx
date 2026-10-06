@@ -141,7 +141,7 @@ export const BecomeSellerView: React.FC<BecomeSellerViewProps> = ({
       providerId: activeSeller.id,
       provider: activeSeller,
       title: title.trim() || `${category} Assistance & Support`,
-      description: description.trim() || 'Friendly, high quality neighborhood & campus skill assistance with Escrow-Lite protection.',
+      description: description.trim() || 'Friendly, high quality neighborhood & campus skill assistance with secured Escrow Protection.',
       category: category,
       price: Number(price) || 250,
       pricingType: pricingType,
@@ -597,7 +597,7 @@ export const BecomeSellerView: React.FC<BecomeSellerViewProps> = ({
 
               <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-2 text-xs text-emerald-800">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Protected by Escrow-Lite: 100% payout released upon buyer approval.</span>
+                <span>Protected by Escrow Services: 100% agreed payout released upon buyer delivery approval.</span>
               </div>
             </div>
           )}

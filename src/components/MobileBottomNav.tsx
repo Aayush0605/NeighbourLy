@@ -6,7 +6,8 @@ import {
   MessageSquare, 
   Sparkles,
   Briefcase,
-  X
+  X,
+  Wallet
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { NavViewType } from './Navbar';
@@ -42,7 +43,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           onClick={() => setIsCreateMenuOpen(false)}
         >
           <div 
-            className="bg-white rounded-t-3xl p-6 space-y-4 shadow-soft-xl border-t border-zinc-200 animate-in slide-in-from-bottom duration-200"
+            className="clay-card rounded-b-none p-6 space-y-4 animate-in slide-in-from-bottom duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
@@ -99,9 +100,9 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         </div>
       )}
 
-      {/* Persistent Bottom Bar on Small Screens */}
+      {/* Persistent Bottom Bar on Small Screens (Claymorphic) */}
       <nav 
-        className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-zinc-200/90 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-2 py-1 pb-[max(0.5rem,env(safe-area-inset-bottom,0.5rem))] md:hidden"
+        className="fixed bottom-0 inset-x-0 z-40 clay-nav px-2 py-1 pb-[max(0.5rem,env(safe-area-inset-bottom,0.5rem))] md:hidden"
         aria-label="Mobile Navigation"
       >
         <div className="grid grid-cols-5 items-center justify-items-center h-14">
@@ -110,7 +111,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <button
             onClick={() => onNavigate('home')}
             className={`flex flex-col items-center justify-center w-full h-full cursor-pointer transition-colors ${
-              activeView === 'home' ? 'text-zinc-950 font-bold' : 'text-zinc-500 hover:text-zinc-800'
+              activeView === 'home' ? 'text-indigo-600 font-bold' : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
             <Home className="w-5 h-5 shrink-0" />
@@ -121,7 +122,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <button
             onClick={() => onNavigate('browse')}
             className={`flex flex-col items-center justify-center w-full h-full cursor-pointer transition-colors relative ${
-              activeView === 'browse' ? 'text-zinc-950 font-bold' : 'text-zinc-500 hover:text-zinc-800'
+              activeView === 'browse' ? 'text-indigo-600 font-bold' : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
             <Compass className="w-5 h-5 shrink-0" />
@@ -132,10 +133,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <div className="flex items-center justify-center -mt-5">
             <button
               onClick={() => setIsCreateMenuOpen(true)}
-              className="w-12 h-12 rounded-full bg-zinc-950 text-white flex items-center justify-center shadow-soft hover:shadow-soft-md ring-4 ring-white active:scale-95 transition-all cursor-pointer"
+              className="w-13 h-13 rounded-full clay-button-primary text-white flex items-center justify-center ring-4 ring-white active:scale-95 transition-all cursor-pointer shadow-lg"
               aria-label="Create task or skill"
             >
-              <Plus className="w-6 h-6 shrink-0" />
+              <Plus className="w-6 h-6 stroke-[3] shrink-0" />
             </button>
           </div>
 
@@ -160,15 +161,18 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <span className="text-[10px] mt-1 tracking-tight">Tasks</span>
           </button>
 
-          {/* 5. AI Assistant */}
+          {/* 5. Escrow Funds */}
           <button
-            onClick={() => onNavigate('ai')}
+            onClick={() => {
+              if (!currentUser) onOpenAuth('login');
+              else onNavigate('wallet');
+            }}
             className={`flex flex-col items-center justify-center w-full h-full cursor-pointer transition-colors ${
-              activeView === 'ai' ? 'text-indigo-600 font-bold' : 'text-zinc-500 hover:text-zinc-800'
+              activeView === 'wallet' ? 'text-indigo-600 font-bold' : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
-            <Sparkles className="w-5 h-5 shrink-0 text-indigo-600" />
-            <span className="text-[10px] mt-1 tracking-tight">AI Help</span>
+            <Wallet className="w-5 h-5 shrink-0" />
+            <span className="text-[10px] mt-1 tracking-tight">Funds</span>
           </button>
 
         </div>
