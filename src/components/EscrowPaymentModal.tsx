@@ -204,14 +204,30 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
     onClose();
   };
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
       <div 
-        className="relative bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-indigo-100 overflow-hidden my-auto animate-in zoom-in-95 duration-200"
+        className="relative bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-indigo-100 overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Direct Peer Escrow Banner */}
-        <div className="p-4 sm:p-5 border-b border-zinc-100 bg-gradient-to-r from-indigo-900 via-indigo-950 to-purple-950 text-white flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-zinc-100 bg-gradient-to-r from-indigo-900 via-indigo-950 to-purple-950 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/20 text-emerald-400 flex items-center justify-center shadow-inner">
               <Lock className="w-5 h-5 stroke-[2.5]" />
@@ -230,15 +246,18 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
               </p>
             </div>
           </div>
-          {gatewayStep !== 'processing' && (
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-full text-zinc-300 hover:text-white hover:bg-white/15 flex items-center justify-center transition-all cursor-pointer"
+            aria-label="Close modal"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
+
+        {/* Scrollable Container for Steps */}
+        <div className="overflow-y-auto flex-1">
 
         {/* STEP 1: PAYMENT METHOD SELECTION & CHECKOUT */}
         {gatewayStep === 'selection' && (
@@ -665,6 +684,7 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
           </div>
         )}
 
+        </div>
       </div>
     </div>
   );

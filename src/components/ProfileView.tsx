@@ -32,6 +32,8 @@ interface ProfileViewProps {
   onOpenOrderChat: (orderId: string) => void;
   onOpenPostService?: () => void;
   onAdminUpdateOrderStatus?: (orderId: string, status: any, escrowStatus: any) => void;
+  onOpenVerificationModal?: () => void;
+  onNavigatePortfolio?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -45,6 +47,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onOpenOrderChat,
   onOpenPostService,
   onAdminUpdateOrderStatus,
+  onOpenVerificationModal,
+  onNavigatePortfolio,
 }) => {
   const [activeTab, setActiveTab] = useState<'services' | 'portfolio' | 'credentials' | 'reviews' | 'admin'>('services');
   const [isEditingBio, setIsEditingBio] = useState(false);
@@ -189,6 +193,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               >
                 {isEditingBio ? 'Close Editor' : 'Edit Profile'}
               </button>
+              {onOpenVerificationModal && (
+                <button
+                  type="button"
+                  onClick={onOpenVerificationModal}
+                  className="px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 text-xs font-bold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                  <span>ID & Password Security</span>
+                </button>
+              )}
+              {onNavigatePortfolio && (
+                <button
+                  type="button"
+                  onClick={onNavigatePortfolio}
+                  className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-bold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Portfolio (PPT/Video)</span>
+                </button>
+              )}
               <button
                 onClick={() => {
                   setActiveTab('services');

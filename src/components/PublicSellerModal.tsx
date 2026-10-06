@@ -39,12 +39,28 @@ export const PublicSellerModal: React.FC<PublicSellerModalProps> = ({
   onUpdateUser,
   showToast,
 }) => {
+  // Close on Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   if (!isOpen) return null;
 
   const userServices = services.filter((s) => s.providerId === user.id);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
       <div 
         className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-zinc-200/90 relative max-h-[90vh] overflow-y-auto space-y-6"
         onClick={(e) => e.stopPropagation()}

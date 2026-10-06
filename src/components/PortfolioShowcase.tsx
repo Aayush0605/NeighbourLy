@@ -288,7 +288,10 @@ export const PortfolioShowcase: React.FC<PortfolioShowcaseProps> = ({
 
       {/* Modal: Add Portfolio Project & Picture */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+        <div 
+          className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setIsAddModalOpen(false)}
+        >
           <div 
             className="relative bg-white rounded-3xl max-w-lg w-full p-6 shadow-soft-xl border border-zinc-200/90 space-y-5 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}

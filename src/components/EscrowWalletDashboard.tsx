@@ -958,7 +958,12 @@ export const EscrowWalletDashboard: React.FC<EscrowWalletDashboardProps> = ({
       {/* 4. MODAL: DEPOSIT FUNDS VIA PAYMENT GATEWAY             */}
       {/* ======================================================== */}
       {isDepositModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+        <div 
+          className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150"
+          onClick={() => setIsDepositModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
           <div 
             className="relative bg-white rounded-3xl max-w-md w-full shadow-2xl border border-indigo-100 p-6 space-y-5 animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}

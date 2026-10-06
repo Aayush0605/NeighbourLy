@@ -14,7 +14,12 @@ import {
   Bot,
   MessageCircle,
   Minimize2,
-  Maximize2
+  Maximize2,
+  DollarSign,
+  SlidersHorizontal,
+  Presentation,
+  Video,
+  FileText
 } from 'lucide-react';
 import { ServiceListing, TaskRequest, LocationPoint, UserProfile } from '../types';
 import { NeighborLyLogo } from './NeighborLyLogo';
@@ -38,6 +43,7 @@ interface ChatMessage {
   text: string;
   timestamp: string;
   suggestedServices?: ServiceListing[];
+  suggestedRequests?: TaskRequest[];
 }
 
 export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
@@ -51,11 +57,12 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
   isOpen,
   onToggleOpen,
 }) => {
+  const [selectedRadiusKm, setSelectedRadiusKm] = useState<number>(5);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       sender: 'assistant',
-      text: `Hello neighbor! 👋 I'm your **Neighborly AI Assistant**, powered by **Gemini 3.8 Flash**.\n\nI can help you:\n• Find trusted neighbors for home repairs, tech setup, pet care & tutoring near **${currentLocation.neighborhood || currentLocation.city}**\n• Estimate fair market rates for neighborhood tasks\n• Help draft your task request or skill listing\n• Explain our **Verified Escrow Services** safety guarantees\n\nHow can I help you today?`,
+      text: `Hello neighbor! 👋 I'm your **NeighborLy AI Assistant**, powered by live platform data & Gemini.\n\nI have direct access to our live **${currentLocation.neighborhood || currentLocation.city}** campus database to help you:\n\n• 📍 **Radius-Based Search**: Match skills and field works within **${selectedRadiusKm} km**\n• 💰 **Real Pricing**: PPT & Pitch Decks (₹200–₹450), 4K Video Edits (₹300–₹600), DSA Tutoring (₹180–₹350)\n• 📋 **Open Field Works**: Browse or post offline campus tasks\n• 🛡️ **Escrow Protection**: Full money safety with transparent 8% platform fee\n\nHow can I help you today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -67,10 +74,11 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const quickPrompts = [
-    { label: '🔧 Find repairs & plumbing', prompt: `Find home repair and plumbing services near ${currentLocation.neighborhood}` },
-    { label: '💰 Tech setup price guide', prompt: `What is the fair market rate to pay a neighbor for Wi-Fi and PC troubleshooting?` },
-    { label: '🛡️ How do Escrow Services work?', prompt: `How does Neighborly Verified Escrow Protection protect my money?` },
-    { label: '📝 Help draft dog walking task', prompt: `Help me draft a task request for pet sitting with recommended budget` },
+    { label: '📊 PPT Presentation rates', prompt: `What are the market rates and top student creators for PPT pitch deck design in ${currentLocation.city}?` },
+    { label: '🎬 4K Video & Reel editors', prompt: `Find 4K video editing and reel creators near ${currentLocation.neighborhood}` },
+    { label: '📋 Open Field Works', prompt: `Show all active open field works and task requests in ${currentLocation.neighborhood}` },
+    { label: '📍 Within 2 km Radius', prompt: `Show all verified student services available within 2 km of ${currentLocation.neighborhood}` },
+    { label: '🛡️ How does Escrow work?', prompt: `How does Neighborly Verified Escrow Protection work with the 8% fee?` },
   ];
 
   useEffect(() => {
@@ -104,6 +112,7 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
           userLocation: currentLocation,
           localServices: services,
           taskRequests: requests,
+          maxRadiusKm: selectedRadiusKm,
         }),
       });
 
@@ -113,20 +122,26 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
 
       const data = await response.json();
 
-      // Find matching local services to display as interactive cards
+      // Find matching local services & requests to display as interactive cards
       const lower = query.toLowerCase();
-      const matched = services.filter((s) => 
+      const matchedServices = services.filter((s) => 
         lower.includes(s.category.toLowerCase()) ||
         lower.includes(s.title.toLowerCase()) ||
-        s.skills.some((sk) => lower.includes(sk.toLowerCase()))
-      ).slice(0, 2);
+        s.skills.some((sk) => lower.includes(sk.toLowerCase())) ||
+        (s.distanceKm && s.distanceKm <= selectedRadiusKm)
+      ).slice(0, 3);
+
+      const matchedRequests = (lower.includes('field') || lower.includes('task') || lower.includes('request') || lower.includes('work'))
+        ? requests.slice(0, 2)
+        : undefined;
 
       const assistantMsg: ChatMessage = {
         id: `ai_${Date.now()}`,
         sender: 'assistant',
-        text: data.reply || "I've matched your request with local services in your neighborhood.",
+        text: data.reply || "I've matched your request with our real live database.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        suggestedServices: matched.length > 0 ? matched : undefined,
+        suggestedServices: matchedServices.length > 0 ? matchedServices : undefined,
+        suggestedRequests: matchedRequests && matchedRequests.length > 0 ? matchedRequests : undefined,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
@@ -145,7 +160,7 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
       const assistantMsg: ChatMessage = {
         id: `ai_${Date.now()}`,
         sender: 'assistant',
-        text: `Here are recommended verified listings near **${currentLocation.neighborhood}**:\n\n• **${matched[0]?.title || 'Neighborhood Helper'}** (₹${matched[0]?.price || 350})\n• **${matched[1]?.title || 'Tech Setup'}** (₹${matched[1]?.price || 400})\n\nAll tasks include complete **Proper Escrow Services** safety.`,
+        text: `📍 **Live Database Matches near ${currentLocation.neighborhood} (${selectedRadiusKm} km scope)**:\n\n• **${matched[0]?.title || 'PPT & Presentation Design'}** (₹${matched[0]?.price || 250}) by *${matched[0]?.provider?.name || 'Verified Student'}*\n• **${matched[1]?.title || '4K Reel & Video Editing'}** (₹${matched[1]?.price || 350}) by *${matched[1]?.provider?.name || 'College Pro'}*\n\nAll tasks include 100% **Verified Escrow Services** protection with 8% platform fee.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         suggestedServices: matched,
       };
@@ -160,7 +175,7 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
       {
         id: 'welcome',
         sender: 'assistant',
-        text: `Conversation reset. How can I help you find or offer local tasks near **${currentLocation.neighborhood}**?`,
+        text: `Conversation reset. How can I help you find or offer local tasks near **${currentLocation.neighborhood || currentLocation.city}**?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
@@ -277,8 +292,9 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
                       {/* Matched Local Listing Cards */}
                       {msg.suggestedServices && msg.suggestedServices.length > 0 && (
                         <div className="mt-3 pt-2.5 border-t border-zinc-100 space-y-2">
-                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                            Recommended Gigs Nearby
+                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                            <span>Recommended Skills Nearby</span>
+                            <span className="text-purple-600 font-bold">Within {selectedRadiusKm}km</span>
                           </p>
                           <div className="space-y-1.5">
                             {msg.suggestedServices.map((svc) => (
@@ -294,8 +310,11 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
                                     {svc.title}
                                   </p>
                                   <p className="text-[11px] text-zinc-500 truncate">
-                                    {svc.provider?.name} · {svc.distanceKm || '1.2'} km away
+                                    {svc.provider?.name} {svc.provider?.studentUniversity ? `· ${svc.provider.studentUniversity}` : ''}
                                   </p>
+                                  <span className="text-[10px] text-purple-700 font-semibold">
+                                    📍 {svc.distanceKm ? `${svc.distanceKm.toFixed(1)} km away` : 'Campus Hub'}
+                                  </span>
                                 </div>
                                 <div className="text-right shrink-0">
                                   <span className="font-bold text-xs text-zinc-950">₹{svc.price}</span>
@@ -303,6 +322,48 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
                                     <span>View</span>
                                     <ExternalLink className="w-2.5 h-2.5" />
                                   </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Matched Open Field Works & Task Requests */}
+                      {msg.suggestedRequests && msg.suggestedRequests.length > 0 && (
+                        <div className="mt-3 pt-2.5 border-t border-zinc-100 space-y-2">
+                          <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider flex items-center justify-between">
+                            <span>Active Field Works & Tasks</span>
+                            <span className="text-amber-600 font-bold">Campus Open</span>
+                          </p>
+                          <div className="space-y-1.5">
+                            {msg.suggestedRequests.map((req) => (
+                              <div
+                                key={req.id}
+                                className="p-2.5 bg-amber-50/50 hover:bg-amber-100/60 rounded-xl border border-amber-200/80 flex items-center justify-between gap-2.5 transition-colors"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-bold text-amber-950 text-xs truncate">
+                                    {req.title}
+                                  </p>
+                                  <p className="text-[11px] text-zinc-500 truncate">
+                                    {req.requesterName} · {req.requesterLocation?.neighborhood || 'Nearby Campus'}
+                                  </p>
+                                  {(req.isUrgent || req.urgent) && (
+                                    <span className="text-[9px] font-black text-rose-600 bg-rose-50 px-1 py-0.2 rounded border border-rose-200 inline-block mt-0.5">
+                                      ⚡ Urgent Task
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="font-bold text-xs text-emerald-800">₹{req.budget}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => onOpenPostRequest()}
+                                    className="text-[10px] text-amber-800 font-bold block hover:underline cursor-pointer"
+                                  >
+                                    View / Apply
+                                  </button>
                                 </div>
                               </div>
                             ))}
@@ -332,6 +393,30 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
             )}
 
             <div ref={messagesEndRef} />
+          </div>
+
+          {/* Radius Scope Selector */}
+          <div className="px-3 py-1.5 bg-purple-50/80 border-t border-purple-100 flex items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center gap-1 text-[11px] font-bold text-purple-900">
+              <MapPin className="w-3 h-3 text-purple-600 shrink-0" />
+              <span>Radius Scope:</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {[1, 2, 5, 10].map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setSelectedRadiusKm(r)}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                    selectedRadiusKm === r
+                      ? 'bg-purple-700 text-white shadow-soft-xs'
+                      : 'bg-white text-purple-700 hover:bg-purple-100 border border-purple-200'
+                  }`}
+                >
+                  {r}km
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Quick Suggestions Chips */}

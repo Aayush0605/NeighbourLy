@@ -31,6 +31,15 @@ export type ServiceCategory =
   | 'Gardening & Outdoors'
   | 'Others';
 
+export type PortfolioMediaFormat = 
+  | 'all' 
+  | 'presentation' 
+  | 'video' 
+  | 'document' 
+  | 'image' 
+  | 'code' 
+  | 'audio';
+
 export interface PortfolioItem {
   id: string;
   title: string;
@@ -44,6 +53,20 @@ export interface PortfolioItem {
   startingPrice?: number; // Starting rate for hiring this skill
   proficiencyLevel?: 'Beginner' | 'Intermediate' | 'Advanced' | 'Campus Pro';
   availableForHire?: boolean;
+  mediaFormat?: 'presentation' | 'video' | 'document' | 'image' | 'code' | 'audio';
+  presentationUrl?: string;
+  videoUrl?: string;
+  documentUrl?: string;
+  codeUrl?: string;
+  audioUrl?: string;
+  fileSize?: string;
+  slideCount?: number;
+  pageCount?: number;
+  authorId?: string;
+  authorName?: string;
+  authorUniversity?: string;
+  authorAvatar?: string;
+  serviceId?: string;
 }
 
 export type TrustBadgeType = 
@@ -80,6 +103,7 @@ export interface UserProfile {
   trustBadges?: TrustBadgeType[];
   idVerified?: boolean;
   studentVerified?: boolean;
+  studentId?: string;
   phoneVerified?: boolean;
   emailVerified?: boolean;
   backgroundChecked?: boolean;
@@ -141,6 +165,7 @@ export interface ServiceListing {
   distanceKm?: number;
   trsScore?: number;
   saved?: boolean;
+  createdAt?: string;
 }
 
 export interface TaskRequest {
@@ -155,6 +180,8 @@ export interface TaskRequest {
   budget: number;
   deadline: string;
   isUrgent: boolean;
+  urgent?: boolean;
+  requesterStudentVerified?: boolean;
   status: 'open' | 'assigned' | 'completed' | 'closed';
   createdAt: string;
   filesAttached?: string[];
@@ -288,7 +315,7 @@ export interface AppNotification {
   title: string;
   body: string;
   type: 'message' | 'order' | 'request' | 'system';
-  linkView?: 'messages' | 'orders' | 'browse';
+  linkView?: 'messages' | 'orders' | 'browse' | 'portfolio' | 'profile' | 'wallet' | 'seller' | 'home' | string;
   linkId?: string; // conversationId, orderId, or requestId
   read: boolean;
   createdAt: string;

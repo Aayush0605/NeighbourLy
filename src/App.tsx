@@ -49,7 +49,8 @@ import {
   syncNotificationToCloud,
   subscribeToUserNotifications,
   markNotificationAsReadInCloud,
-  markAllNotificationsAsReadInCloud
+  markAllNotificationsAsReadInCloud,
+  deleteNotificationFromCloud
 } from './services/firestoreSync';
 import { ensureFirebaseAuth, signOutUser } from './services/authService';
 import { 
@@ -76,6 +77,7 @@ import { AiAssistantModal } from './components/AiAssistantModal';
 import { AiChatbotWidget } from './components/AiChatbotWidget';
 import { AdminDashboard } from './components/AdminDashboard';
 import { UserProfileModal } from './components/UserProfileModal';
+import { PortfolioPage } from './components/PortfolioPage';
 import { NeighborLyLogo } from './components/NeighborLyLogo';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { getAdminSession } from './utils/adminAuth';
@@ -143,6 +145,8 @@ export default function App() {
         setIsAuthModalOpen(true);
       } else if (hash === 'browse') {
         setActiveView('browse');
+      } else if (hash === 'portfolio') {
+        setActiveView('portfolio');
       } else if (hash === 'seller' || hash === 'become') {
         setActiveView('seller');
       } else if (hash === 'messages') {
@@ -522,25 +526,11 @@ export default function App() {
   const handleAddService = async (
     newServiceData: any
   ) => {
-    let activeUser = currentUser || newServiceData.provider || getSavedAuthUser();
+    const activeUser = currentUser || getSavedAuthUser();
     if (!activeUser) {
-      activeUser = {
-        id: `user_${Date.now()}`,
-        userId: 'student_seller',
-        name: 'College Student',
-        email: 'student@campus.edu',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-        location: currentLocation,
-        authProvider: 'password',
-        verified: true,
-        role: 'user',
-        studentVerified: true,
-        tasksCompleted: 0,
-        rating: 5.0,
-        reviewCount: 0,
-        joinedDate: 'Joined Sep 2026',
-      };
-      saveAuthUser(activeUser);
+      showToast('Please create an account or log in to list a skill.');
+      requireAuth('signup');
+      return;
     }
     setCurrentUser(activeUser);
 
@@ -581,24 +571,11 @@ export default function App() {
   const handlePostRequest = async (
     requestData: any
   ) => {
-    let activeUser = currentUser || getSavedAuthUser();
+    const activeUser = currentUser || getSavedAuthUser();
     if (!activeUser) {
-      activeUser = {
-        id: `user_${Date.now()}`,
-        userId: 'campus_resident',
-        name: 'Campus Resident',
-        email: 'resident@campus.edu',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-        location: currentLocation,
-        authProvider: 'password',
-        verified: true,
-        role: 'user',
-        tasksCompleted: 0,
-        rating: 5.0,
-        reviewCount: 0,
-        joinedDate: 'Joined Sep 2026',
-      };
-      saveAuthUser(activeUser);
+      showToast('Please create an account or log in to post a request.');
+      requireAuth('signup');
+      return;
     }
     setCurrentUser(activeUser);
 
@@ -628,6 +605,7 @@ export default function App() {
   // Book Service Trigger (Opens Proper Escrow Services Accept Money & 8% Protection Modal)
   const handleRequestOrder = async (service: ServiceListing, withRush: boolean) => {
     if (!currentUser) {
+      showToast('Please create an account or log in to place an order.');
       requireAuth('login');
       return;
     }
@@ -637,7 +615,11 @@ export default function App() {
 
   // Confirm Escrow Services Deposit & Authoritative Order Creation
   const handleConfirmEscrowPayment = async (service: ServiceListing, withRush: boolean) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      showToast('Please create an account or log in to place an order.');
+      requireAuth('login');
+      return;
+    }
 
     const orderAmount = withRush ? service.price + (service.rushPrice || 100) : service.price;
     const commissionFee = Math.round(orderAmount * 0.08);
@@ -1143,24 +1125,37 @@ export default function App() {
         unreadMessagesCount={unreadNotificationsCount}
         notifications={notifications}
         onMarkNotificationRead={async (id) => {
-          setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+          // Remove notification once seen as requested
+          setNotifications((prev) => prev.filter((n) => n.id !== id));
           await markNotificationAsReadInCloud(id);
+          await deleteNotificationFromCloud(id);
         }}
         onMarkAllNotificationsRead={async () => {
+          const toDelete = [...notifications];
+          setNotifications([]);
           if (currentUser?.id) {
-            setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
             await markAllNotificationsAsReadInCloud(currentUser.id);
+          }
+          for (const n of toDelete) {
+            deleteNotificationFromCloud(n.id);
           }
         }}
         onSelectNotification={(notif) => {
+          setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+          markNotificationAsReadInCloud(notif.id);
+          deleteNotificationFromCloud(notif.id);
           if (notif.linkView === 'messages') {
             if (notif.linkId) setActiveConversationId(notif.linkId);
             setActiveView('messages');
           } else if (notif.linkView === 'orders') {
             if (notif.linkId) setActiveChatOrderId(notif.linkId);
             setActiveView('orders');
+          } else if (notif.linkView === 'portfolio') {
+            setActiveView('portfolio');
+          } else if (notif.linkView === 'profile') {
+            setActiveView('profile');
           } else if (notif.linkView) {
-            setActiveView(notif.linkView);
+            setActiveView(notif.linkView as NavViewType);
           }
         }}
       />
@@ -1219,8 +1214,14 @@ export default function App() {
                   handleOpenMessageWithUser(u, s);
                 }}
                 onOpenPublicProfile={handleOpenPublicProfile}
-                onOpenPostService={() => setActiveView('seller')}
-                onOpenPostRequest={() => setIsPostRequestOpen(true)}
+                onOpenPostService={() => {
+                  if (!currentUser) requireAuth('signup');
+                  else setActiveView('seller');
+                }}
+                onOpenPostRequest={() => {
+                  if (!currentUser) requireAuth('signup');
+                  else setIsPostRequestOpen(true);
+                }}
                 onDeleteRequest={async (reqId) => {
                   setRequests((prev) => prev.filter((r) => r.id !== reqId));
                   await deleteRequestFromCloud(reqId);
@@ -1248,8 +1249,14 @@ export default function App() {
               handleOpenMessageWithUser(u, s);
             }}
             onOpenPublicProfile={handleOpenPublicProfile}
-            onOpenPostService={() => setActiveView('seller')}
-            onOpenPostRequest={() => setIsPostRequestOpen(true)}
+            onOpenPostService={() => {
+              if (!currentUser) requireAuth('signup');
+              else setActiveView('seller');
+            }}
+            onOpenPostRequest={() => {
+              if (!currentUser) requireAuth('signup');
+              else setIsPostRequestOpen(true);
+            }}
             onDeleteRequest={async (reqId) => {
               setRequests((prev) => prev.filter((r) => r.id !== reqId));
               await deleteRequestFromCloud(reqId);
@@ -1259,6 +1266,58 @@ export default function App() {
             onCategoryChange={setSelectedCategory}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+          />
+        )}
+
+        {/* VIEW: MULTI-FORMAT STUDENT PORTFOLIO SHOWCASE */}
+        {activeView === 'portfolio' && (
+          <PortfolioPage
+            currentUser={currentUser}
+            currentLocation={currentLocation}
+            onOpenAuth={(mode) => requireAuth(mode)}
+            onBookSkill={(item) => {
+              const matched = services.find(
+                (s) => s.id === item.serviceId || (item.offeredSkill ? s.title.toLowerCase().includes(item.offeredSkill.toLowerCase()) : false)
+              );
+              if (matched) {
+                setSelectedService(matched);
+              } else {
+                const authorId = item.authorId || `usr_${item.id}`;
+                const tempListing: ServiceListing = {
+                  id: item.serviceId || `srv_${item.id}`,
+                  title: item.title,
+                  description: item.description,
+                  category: (item.category as ServiceCategory) || 'PPT & Presentations',
+                  price: item.startingPrice || 250,
+                  providerId: authorId,
+                  provider: {
+                    id: authorId,
+                    userId: authorId,
+                    name: item.authorName || 'Student Creator',
+                    avatar: item.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+                    rating: 5.0,
+                    reviewCount: 12,
+                    studentUniversity: item.authorUniversity || 'Campus College',
+                    studentVerified: true,
+                    role: 'seller' as const,
+                    joinedDate: '2026',
+                    tasksCompleted: 8,
+                    verified: true,
+                    location: currentLocation,
+                    authProvider: 'password',
+                    email: `${authorId}@campus.edu`
+                  },
+                  location: currentLocation,
+                  skills: item.tags || ['Portfolio Skill'],
+                  deliveryDays: 1,
+                  rushPrice: 100,
+                  rating: 5.0,
+                  reviewCount: 8,
+                  createdAt: item.date || 'Recent'
+                };
+                setSelectedService(tempListing);
+              }
+            }}
           />
         )}
 
@@ -1377,6 +1436,8 @@ export default function App() {
               onOpenOrderChat={(id) => setActiveChatOrderId(id)}
               onOpenPostService={() => setIsPostServiceOpen(true)}
               onAdminUpdateOrderStatus={handleUpdateOrderStatus}
+              onOpenVerificationModal={() => handleOpenProfile(currentUser)}
+              onNavigatePortfolio={() => setActiveView('portfolio')}
             />
           ) : (
             <div className="max-w-md mx-auto my-16 px-4">

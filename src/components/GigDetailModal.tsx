@@ -42,6 +42,17 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
 }) => {
   const [isRushDelivery, setIsRushDelivery] = useState(false);
 
+  // Close on Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const distanceKm = service.location
     ? calculateDistanceKm(
         currentLocation.lat,
@@ -62,7 +73,10 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-150">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-150"
+      onClick={onClose}
+    >
       <div 
         className="relative bg-white rounded-t-3xl sm:rounded-3xl max-w-4xl w-full shadow-soft-xl border border-zinc-200/90 overflow-hidden my-0 sm:my-auto flex flex-col max-h-[92vh] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -95,10 +109,12 @@ export const GigDetailModal: React.FC<GigDetailModalProps> = ({
               <span className="hidden sm:inline">{service.saved ? 'Saved' : 'Save'}</span>
             </button>
             <button
+              type="button"
               onClick={onClose}
-              className="sm:hidden p-2 rounded-xl text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 cursor-pointer"
+              className="p-2 sm:px-2.5 sm:py-2 rounded-xl text-zinc-500 hover:text-zinc-950 hover:bg-zinc-200/80 transition-colors flex items-center justify-center cursor-pointer"
+              aria-label="Close service details"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>

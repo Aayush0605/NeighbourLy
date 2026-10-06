@@ -7,7 +7,9 @@ import {
   Sparkles,
   Briefcase,
   X,
-  Wallet
+  Wallet,
+  Presentation,
+  User
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { NavViewType } from './Navbar';
@@ -39,11 +41,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       {/* Create Action Modal / Bottom Sheet for Mobile */}
       {isCreateMenuOpen && (
         <div 
-          className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs flex flex-col justify-end md:hidden animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 bg-zinc-950/70 backdrop-blur-xs flex flex-col justify-end md:hidden animate-in fade-in duration-150"
           onClick={() => setIsCreateMenuOpen(false)}
         >
           <div 
-            className="clay-card rounded-b-none p-6 space-y-4 animate-in slide-in-from-bottom duration-200"
+            className="bg-white rounded-t-3xl p-6 space-y-4 animate-in slide-in-from-bottom duration-200 border-t border-zinc-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
@@ -76,7 +78,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 </div>
                 <div>
                   <p className="text-xs font-bold">Post a Task</p>
-                  <p className="text-[10px] text-zinc-400 mt-0.5">Find nearby helpers</p>
+                  <p className="text-[10px] text-zinc-400 mt-0.5">Broadcast field request</p>
                 </div>
               </button>
 
@@ -85,14 +87,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                   setIsCreateMenuOpen(false);
                   onOpenPostSkill();
                 }}
-                className="p-4 bg-zinc-50 border border-zinc-200 text-zinc-900 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-2xs hover:bg-zinc-100 transition-all cursor-pointer text-center group"
+                className="p-4 bg-purple-50 border border-purple-200 text-purple-950 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-2xs hover:bg-purple-100 transition-all cursor-pointer text-center group"
               >
-                <div className="w-10 h-10 rounded-xl bg-white border border-zinc-200 shadow-2xs flex items-center justify-center text-blue-600 group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-xl bg-white border border-purple-200 shadow-2xs flex items-center justify-center text-purple-600 group-hover:scale-105 transition-transform">
                   <Briefcase className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="text-xs font-bold">Offer a Skill</p>
-                  <p className="text-[10px] text-zinc-500 mt-0.5">Earn from your street</p>
+                  <p className="text-[10px] text-purple-700 mt-0.5">List gig & earn funds</p>
                 </div>
               </button>
             </div>
@@ -100,9 +102,9 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         </div>
       )}
 
-      {/* Persistent Bottom Bar on Small Screens (Claymorphic) */}
+      {/* Persistent Bottom Bar on Small Screens */}
       <nav 
-        className="fixed bottom-0 inset-x-0 z-40 clay-nav px-2 py-1 pb-[max(0.5rem,env(safe-area-inset-bottom,0.5rem))] md:hidden"
+        className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-zinc-200 px-2 py-1 pb-[max(0.5rem,env(safe-area-inset-bottom,0.5rem))] md:hidden"
         aria-label="Mobile Navigation"
       >
         <div className="grid grid-cols-5 items-center justify-items-center h-14">
@@ -118,7 +120,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <span className="text-[10px] mt-1 tracking-tight">Home</span>
           </button>
 
-          {/* 2. Explore */}
+          {/* 2. Explore / Browse */}
           <button
             onClick={() => onNavigate('browse')}
             className={`flex flex-col items-center justify-center w-full h-full cursor-pointer transition-colors relative ${
@@ -129,18 +131,21 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <span className="text-[10px] mt-1 tracking-tight">Explore</span>
           </button>
 
-          {/* 3. Center Create Action (+) */}
-          <div className="flex items-center justify-center -mt-5">
-            <button
-              onClick={() => setIsCreateMenuOpen(true)}
-              className="w-13 h-13 rounded-full clay-button-primary text-white flex items-center justify-center ring-4 ring-white active:scale-95 transition-all cursor-pointer shadow-lg"
-              aria-label="Create task or skill"
-            >
-              <Plus className="w-6 h-6 stroke-[3] shrink-0" />
-            </button>
-          </div>
+          {/* 3. Multi-Format Portfolio */}
+          <button
+            onClick={() => onNavigate('portfolio')}
+            className={`flex flex-col items-center justify-center w-full h-full cursor-pointer transition-colors relative ${
+              activeView === 'portfolio' ? 'text-purple-700 font-bold' : 'text-zinc-500 hover:text-zinc-800'
+            }`}
+          >
+            <div className="relative">
+              <Presentation className="w-5 h-5 shrink-0 text-purple-600" />
+              <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-purple-600" />
+            </div>
+            <span className="text-[10px] mt-1 tracking-tight text-purple-900 font-bold">Portfolio</span>
+          </button>
 
-          {/* 4. My Tasks */}
+          {/* 4. My Tasks & Orders */}
           <button
             onClick={() => {
               if (!currentUser) onOpenAuth('login');
@@ -161,18 +166,18 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <span className="text-[10px] mt-1 tracking-tight">Tasks</span>
           </button>
 
-          {/* 5. Escrow Funds */}
+          {/* 5. User Profile */}
           <button
             onClick={() => {
               if (!currentUser) onOpenAuth('login');
-              else onNavigate('wallet');
+              else onNavigate('profile');
             }}
             className={`flex flex-col items-center justify-center w-full h-full cursor-pointer transition-colors ${
-              activeView === 'wallet' ? 'text-indigo-600 font-bold' : 'text-zinc-500 hover:text-zinc-800'
+              activeView === 'profile' ? 'text-indigo-600 font-bold' : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
-            <Wallet className="w-5 h-5 shrink-0" />
-            <span className="text-[10px] mt-1 tracking-tight">Funds</span>
+            <User className="w-5 h-5 shrink-0" />
+            <span className="text-[10px] mt-1 tracking-tight">Profile</span>
           </button>
 
         </div>

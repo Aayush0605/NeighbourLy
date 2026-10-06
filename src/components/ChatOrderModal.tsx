@@ -51,6 +51,17 @@ export const ChatOrderModal: React.FC<ChatOrderModalProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputText.trim()) {
@@ -65,7 +76,12 @@ export const ChatOrderModal: React.FC<ChatOrderModalProps> = ({
   const otherPartyLocation = isMeBuyer ? order.sellerLocation : order.buyerLocation;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-150">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 animate-in fade-in duration-150"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
       <div 
         className="relative bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full shadow-soft-xl border border-zinc-200/90 overflow-hidden my-0 sm:my-auto flex flex-col h-[90vh] sm:h-[86vh] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -108,6 +124,14 @@ export const ChatOrderModal: React.FC<ChatOrderModalProps> = ({
             >
               <span>₹{order.amount}</span>
               <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100 transition-colors cursor-pointer"
+              aria-label="Close dialog"
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>

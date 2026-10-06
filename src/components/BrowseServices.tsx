@@ -14,7 +14,9 @@ import {
   Clock,
   AlertCircle,
   Briefcase,
-  Trash2
+  Trash2,
+  GraduationCap,
+  ShieldCheck
 } from 'lucide-react';
 import { ServiceListing, TaskRequest, ServiceCategory, LocationPoint, UserProfile } from '../types';
 import { calculateDistanceKm } from '../utils/location';
@@ -65,6 +67,7 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
   const [sortBy, setSortBy] = useState<'recommended' | 'price_asc' | 'distance' | 'rating'>('recommended');
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [onlyVerifiedStudents, setOnlyVerifiedStudents] = useState<boolean>(false);
 
   const categories = [
     { id: 'All', label: 'All Categories' },
@@ -109,7 +112,8 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
         const matchesPrice = s.price <= maxPrice;
         // When locationScope is 'all', do not filter out cross-device / cross-location services
         const matchesDist = locationScope === 'all' || (s.distanceKm || 0) <= maxDistance;
-        return matchesCat && matchesQuery && matchesPrice && matchesDist;
+        const matchesStudent = !onlyVerifiedStudents || Boolean(s.provider?.studentVerified);
+        return matchesCat && matchesQuery && matchesPrice && matchesDist && matchesStudent;
       })
       .sort((a, b) => {
         if (sortBy === 'price_asc') return a.price - b.price;
@@ -117,7 +121,7 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
         if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
         return (b.rating || 0) * (b.reviewCount || 1) - (a.rating || 0) * (a.reviewCount || 1);
       });
-  }, [services, currentLocation, selectedCategory, searchQuery, maxPrice, maxDistance, sortBy, locationScope]);
+  }, [services, currentLocation, selectedCategory, searchQuery, maxPrice, maxDistance, sortBy, locationScope, onlyVerifiedStudents]);
 
   const filteredRequests = useMemo(() => {
     return requests
@@ -140,9 +144,10 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
           r.description.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesPrice = (r.budget || 0) <= maxPrice;
         const matchesDist = locationScope === 'all' || (r.distanceKm || 0) <= maxDistance;
-        return matchesCat && matchesQuery && matchesPrice && matchesDist;
+        const matchesStudent = !onlyVerifiedStudents || r.category === 'Academic Support' || Boolean(r.requesterStudentVerified);
+        return matchesCat && matchesQuery && matchesPrice && matchesDist && matchesStudent;
       });
-  }, [requests, currentLocation, selectedCategory, searchQuery, maxPrice, maxDistance, locationScope]);
+  }, [requests, currentLocation, selectedCategory, searchQuery, maxPrice, maxDistance, locationScope, onlyVerifiedStudents]);
 
   return (
     <div className="bg-[#FAF8F5] min-h-screen py-6 sm:py-10 w-full max-w-full overflow-x-hidden">
@@ -249,6 +254,20 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
         {/* Horizontal Category Carousel for Fast Filtering */}
         {/* Quick Category Filter Scroll Bar (Claymorphic Pills) */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar w-full max-w-full">
+          {/* Quick Filter: Verified Students Only Badge */}
+          <button
+            type="button"
+            onClick={() => setOnlyVerifiedStudents(!onlyVerifiedStudents)}
+            className={`px-3.5 py-2 text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 flex items-center gap-1.5 rounded-full ${
+              onlyVerifiedStudents
+                ? 'bg-purple-600 text-white shadow-md ring-2 ring-purple-300'
+                : 'bg-white hover:bg-purple-50 text-purple-900 border border-purple-200 shadow-2xs'
+            }`}
+          >
+            <GraduationCap className={`w-3.5 h-3.5 ${onlyVerifiedStudents ? 'text-white' : 'text-purple-600'}`} />
+            <span>🎓 Verified Students {onlyVerifiedStudents ? '✓ (Active)' : ''}</span>
+          </button>
+
           {categories.map((cat) => {
             const isActive = selectedCategory === cat.id;
             return (
@@ -362,6 +381,30 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-zinc-200 rounded-lg"
               />
+            </div>
+
+            {/* Verified Campus Student Filter */}
+            <div className="space-y-2 pt-3 border-t border-zinc-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <GraduationCap className="w-4 h-4 text-purple-600" />
+                  <span className="text-xs font-bold text-zinc-900">Verified Students</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOnlyVerifiedStudents(!onlyVerifiedStudents)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                    onlyVerifiedStudents
+                      ? 'bg-purple-600 text-white shadow-soft-xs'
+                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                  }`}
+                >
+                  {onlyVerifiedStudents ? 'Active ✓' : 'All Gigs'}
+                </button>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-snug">
+                Detect and filter skills offered by college students who hold verified campus ID badges.
+              </p>
             </div>
 
             {/* Trust Assurance Badge */}
@@ -523,11 +566,21 @@ export const BrowseServices: React.FC<BrowseServicesProps> = ({
                                 className="w-6 h-6 rounded-full object-cover ring-1 ring-zinc-200"
                               />
                               <div className="text-left">
-                                <span className="text-xs font-bold text-zinc-800 block leading-tight">
-                                  {service.provider?.name || 'Student Seller'}
-                                </span>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-xs font-bold text-zinc-800 block leading-tight">
+                                    {service.provider?.name || 'Student Seller'}
+                                  </span>
+                                  {service.provider?.studentVerified && (
+                                    <span 
+                                      className="inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-800 border border-purple-200 shrink-0"
+                                      title="Verified Campus Student ID Badge"
+                                    >
+                                      🎓 Verified
+                                    </span>
+                                  )}
+                                </div>
                                 {service.provider?.studentUniversity && (
-                                  <span className="text-[10px] text-indigo-700 font-semibold block leading-tight truncate max-w-[120px]">
+                                  <span className="text-[10px] text-indigo-700 font-semibold block leading-tight truncate max-w-[130px]">
                                     {service.provider.studentUniversity}
                                   </span>
                                 )}

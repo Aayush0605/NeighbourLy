@@ -103,6 +103,10 @@ export const BecomeSellerView: React.FC<BecomeSellerViewProps> = ({
   };
 
   const handleNext = () => {
+    if (!currentUser) {
+      onOpenAuth('signup');
+      return;
+    }
     if (step === 1 && !title.trim()) {
       setTitle(`${category} Guidance & Skills`);
     }
@@ -114,25 +118,12 @@ export const BecomeSellerView: React.FC<BecomeSellerViewProps> = ({
   };
 
   const handleFinalSubmit = () => {
-    const activeSeller = currentUser || {
-      id: `user_seller_${Date.now()}`,
-      userId: 'campus_student',
-      name: 'College Student (You)',
-      email: 'student@college.edu',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-      location: currentLocation,
-      authProvider: 'password' as const,
-      verified: true,
-      role: 'user' as const,
-      trustScore: 92,
-      studentVerified: true,
-      studentUniversity: collegeName || 'PCTE Group of Institutes, Ludhiana',
-      rating: 5.0,
-      reviewCount: 0,
-      tasksCompleted: 0,
-      bio: description || 'College student offering quality peer skills and academic assistance.',
-      joinedDate: 'Joined Sep 2026',
-    };
+    if (!currentUser) {
+      onOpenAuth('signup');
+      return;
+    }
+
+    const activeSeller = currentUser;
 
     const finalCover = coverImage || (sampleImages.length > 0 ? sampleImages[0] : getServicePhoto(category));
 
@@ -225,6 +216,28 @@ export const BecomeSellerView: React.FC<BecomeSellerViewProps> = ({
               />
             ))}
           </div>
+
+          {/* Unauthenticated User Notice */}
+          {!currentUser && (
+            <div className="p-4 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 border border-indigo-200/90 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-indigo-950">Registration Required to Offer Skills</h4>
+                  <p className="text-[11px] text-zinc-500">Create an account or sign in with student verification to publish your listing.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenAuth('signup')}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-soft-xs cursor-pointer whitespace-nowrap text-xs"
+              >
+                Sign Up / Sign In
+              </button>
+            </div>
+          )}
 
           {/* STEP 1: Basic Information (Exact Screenshot 2) */}
           {step === 1 && (
