@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, User, MessageSquare, ArrowLeft, Sparkles, Clock, CheckCheck, Shield } from 'lucide-react';
+import { Send, User, MessageSquare, ArrowLeft, Sparkles, Clock, CheckCheck, Shield, Trash2, RefreshCw } from 'lucide-react';
 import { Message, UserProfile, Conversation } from '../types';
 
 interface MessagesViewProps {
@@ -12,6 +12,8 @@ interface MessagesViewProps {
   onOpenPublicProfile: (user: UserProfile) => void;
   onNavigateBrowse: () => void;
   pendingRecipientUser?: UserProfile | null;
+  onDeleteConversation?: (conversationId: string) => void;
+  onClearAllMessages?: () => void;
 }
 
 export const MessagesView: React.FC<MessagesViewProps> = ({
@@ -24,6 +26,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   onOpenPublicProfile,
   onNavigateBrowse,
   pendingRecipientUser,
+  onDeleteConversation,
+  onClearAllMessages,
 }) => {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -43,10 +47,12 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   // Identify current active conversation
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
 
-  // Find other participant for the active thread
+  // Find other participant from conversation, pending user, or peer messages
+  const peerMessage = messages.find((m) => m.senderId && m.senderId !== currentUser?.id && !m.isSystem);
+
   const otherParticipant = activeConversation
     ? Object.values(activeConversation.participants || {}).find(
-        (p) => p.id !== currentUser?.id
+        (p) => p.id !== currentUser?.id && p.email !== currentUser?.email
       ) || Object.values(activeConversation.participants || {})[0]
     : pendingRecipientUser
     ? {
@@ -56,6 +62,24 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
         role: pendingRecipientUser.studentUniversity || 'Student Peer',
         email: pendingRecipientUser.email,
         studentUniversity: pendingRecipientUser.studentUniversity,
+      }
+    : peerMessage
+    ? {
+        id: peerMessage.senderId,
+        name: peerMessage.senderName,
+        avatar: peerMessage.senderAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+        role: 'Student Peer',
+        email: '',
+        studentUniversity: 'College Student',
+      }
+    : activeConversationId
+    ? {
+        id: 'peer',
+        name: 'Student Peer',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+        role: 'Student Peer',
+        email: '',
+        studentUniversity: 'College Student',
       }
     : null;
 
@@ -98,8 +122,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     }
   };
 
-  // If there are zero conversations and no pending recipient
-  if (conversations.length === 0 && !pendingRecipientUser) {
+  // If there are zero conversations and no active conversation or messages
+  if (conversations.length === 0 && !pendingRecipientUser && !activeConversationId && messages.length === 0) {
     return (
       <div className="bg-[#FAF8F5] min-h-[calc(100vh-4rem)] py-10 sm:py-16">
         <div className="max-w-3xl mx-auto px-4 text-center space-y-5">
@@ -141,12 +165,29 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               Live peer-to-peer chats and task milestone discussions
             </p>
           </div>
-          <button
-            onClick={onNavigateBrowse}
-            className="text-xs font-bold text-indigo-600 hover:underline cursor-pointer flex items-center gap-1"
-          >
-            <span>Explore Skills</span>
-          </button>
+          <div className="flex items-center gap-3">
+            {onClearAllMessages && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('Clear all local chat history and reset message threads?')) {
+                    onClearAllMessages();
+                  }
+                }}
+                className="px-3 py-1.5 bg-zinc-100 hover:bg-rose-50 hover:text-rose-600 text-zinc-600 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5"
+                title="Wipe local chat cache"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Clear History</span>
+              </button>
+            )}
+            <button
+              onClick={onNavigateBrowse}
+              className="text-xs font-bold text-indigo-600 hover:underline cursor-pointer flex items-center gap-1"
+            >
+              <span>Explore Skills</span>
+            </button>
+          </div>
         </div>
 
         {/* Messaging Layout Container */}
@@ -180,6 +221,30 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     </div>
                     <p className="text-xs text-indigo-700/80 truncate">
                       Starting new conversation...
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* If activeConversationId is active but not in conversations list */}
+              {activeConversationId && !conversations.some(c => c.id === activeConversationId) && !pendingRecipientUser && (
+                <div
+                  className="p-4 bg-indigo-50/70 border-l-4 border-indigo-600 flex items-center gap-3 cursor-pointer"
+                >
+                  <img
+                    src={otherParticipant?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                    alt={otherParticipant?.name || 'Chat'}
+                    className="w-11 h-11 rounded-full object-cover ring-2 ring-indigo-400/40"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-zinc-900 truncate">
+                        {otherParticipant?.name || 'Live Chat'}
+                      </h3>
+                      <span className="text-[10px] text-indigo-600 font-bold">Active</span>
+                    </div>
+                    <p className="text-xs text-indigo-700/80 truncate">
+                      {messages.length > 0 ? messages[messages.length - 1].text : 'Connected'}
                     </p>
                   </div>
                 </div>
@@ -280,6 +345,21 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     <Shield className="w-3.5 h-3.5" />
                     <span>Escrow Protected</span>
                   </div>
+
+                  {activeConversationId && onDeleteConversation && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm('Delete this conversation thread?')) {
+                          onDeleteConversation(activeConversationId);
+                        }
+                      }}
+                      className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
+                      title="Delete this conversation"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -372,7 +452,21 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
             </div>
 
             {/* Bottom Message Input Bar */}
-            <form onSubmit={handleSend} className="p-3 sm:p-4 bg-white border-t border-zinc-100">
+            <form onSubmit={handleSend} className="p-3 sm:p-4 bg-white border-t border-zinc-100 space-y-2">
+              {/* Real-time AI Escrow Safety Flag */}
+              {(inputText.toLowerCase().includes('pay outside') ||
+                inputText.toLowerCase().includes('cash directly') ||
+                inputText.toLowerCase().includes('telegram') ||
+                inputText.toLowerCase().includes('skip escrow') ||
+                inputText.toLowerCase().includes('gpay directly')) && (
+                <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>
+                    <strong>AI Safety Tip:</strong> Transacting outside NeighborLy Escrow removes your money-back guarantee. Keep payments inside the app for 100% protection.
+                  </span>
+                </div>
+              )}
+
               <div className="relative flex items-center bg-zinc-50 rounded-2xl border border-zinc-200/90 p-1.5 focus-within:border-indigo-600 focus-within:ring-2 focus-within:ring-indigo-600/20 transition-all">
                 <input
                   type="text"

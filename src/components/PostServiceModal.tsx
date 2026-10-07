@@ -6,7 +6,10 @@ import {
   ShieldCheck, 
   DollarSign, 
   Tag,
-  Briefcase
+  Briefcase,
+  Sparkles,
+  Zap,
+  TrendingUp
 } from 'lucide-react';
 import { ServiceCategory, LocationPoint, ServiceListing, UserProfile } from '../types';
 import { NeighborLyLogo } from './NeighborLyLogo';
@@ -35,6 +38,9 @@ export const PostServiceModal: React.FC<PostServiceModalProps> = ({
   const [revisions, setRevisions] = useState<number>(2);
   const [isUrgent, setIsUrgent] = useState(false);
   const [skillsInput, setSkillsInput] = useState('Local Help, Quick Turnaround');
+  const [isAiEnhancing, setIsAiEnhancing] = useState(false);
+  const [isAiPricing, setIsAiPricing] = useState(false);
+  const [aiPriceRationale, setAiPriceRationale] = useState<string | null>(null);
 
   const categories: ServiceCategory[] = [
     'Academic Support',
@@ -50,6 +56,69 @@ export const PostServiceModal: React.FC<PostServiceModalProps> = ({
     'Gardening & Outdoors',
     'Other',
   ];
+
+  const handleAiEnhance = async () => {
+    if (!description.trim() && !title.trim()) return;
+    setIsAiEnhancing(true);
+    try {
+      const res = await fetch('/api/gemini/enhance-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'service_description',
+          text: description || title,
+          category,
+          university: currentUser?.studentUniversity,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.enhancedText) {
+          setDescription(data.enhancedText);
+        }
+        if (Array.isArray(data.suggestedSkills) && data.suggestedSkills.length > 0) {
+          setSkillsInput(data.suggestedSkills.join(', '));
+        }
+      }
+    } catch (e) {
+      console.warn('AI enhance error:', e);
+    } finally {
+      setIsAiEnhancing(false);
+    }
+  };
+
+  const handleAiPriceEstimate = async () => {
+    setIsAiPricing(true);
+    try {
+      const res = await fetch('/api/gemini/price-estimate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title || category,
+          category,
+          description,
+          deliveryDays,
+          isRush: rushPrice > 0,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.recommendedPrice === 'number') {
+          setPrice(data.recommendedPrice);
+        }
+        if (typeof data.rushPremium === 'number') {
+          setRushPrice(data.rushPremium);
+        }
+        if (data.rationale) {
+          setAiPriceRationale(data.rationale);
+        }
+      }
+    } catch (e) {
+      console.warn('AI pricing error:', e);
+    } finally {
+      setIsAiPricing(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,7 +211,7 @@ export const PostServiceModal: React.FC<PostServiceModalProps> = ({
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Home Wi-Fi & Printer Setup, Furniture Assembly, Math Tutoring"
+              placeholder="e.g. PPT Pitch Deck Design, 4K Reel Editing, Math Tutoring"
               className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white shadow-2xs"
             />
           </div>
@@ -164,7 +233,18 @@ export const PostServiceModal: React.FC<PostServiceModalProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-900">Base Price (₹ INR)</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-zinc-900">Base Price (₹ INR)</label>
+                <button
+                  type="button"
+                  onClick={handleAiPriceEstimate}
+                  disabled={isAiPricing}
+                  className="flex items-center gap-1 text-[11px] font-bold text-purple-700 hover:text-purple-900 transition-colors cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3 text-purple-600" />
+                  <span>{isAiPricing ? 'Estimating...' : 'AI Price Suggest'}</span>
+                </button>
+              </div>
               <input
                 type="number"
                 min="50"
@@ -174,18 +254,34 @@ export const PostServiceModal: React.FC<PostServiceModalProps> = ({
                 onChange={(e) => setPrice(Number(e.target.value))}
                 className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white shadow-2xs tabular-nums"
               />
+              {aiPriceRationale && (
+                <p className="text-[10px] text-purple-700 bg-purple-50 p-2 rounded-xl border border-purple-100">
+                  💡 {aiPriceRationale}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-900">Description & What's Included</label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-zinc-900">Description & What's Included</label>
+              <button
+                type="button"
+                onClick={handleAiEnhance}
+                disabled={isAiEnhancing}
+                className="flex items-center gap-1 text-[11px] font-bold text-indigo-700 hover:text-indigo-900 transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-3 h-3 text-indigo-600" />
+                <span>{isAiEnhancing ? 'Polishing...' : 'AI Polish & Enhance'}</span>
+              </button>
+            </div>
             <textarea
               required
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe what you will do, your experience or tools, and what the neighbor needs to provide..."
-              className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white shadow-2xs"
+              className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs sm:text-sm text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white shadow-2xs leading-relaxed"
             />
           </div>
 

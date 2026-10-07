@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, ShieldCheck, CheckCircle2, Clock, Wallet, Star } from 'lucide-react';
+import { MessageSquare, ShieldCheck, CheckCircle2, Clock, Wallet, Star, Trash2 } from 'lucide-react';
 import { Order, UserProfile } from '../types';
 import { getServicePhoto } from '../utils/categoryImages';
 import { EscrowWalletDashboard } from './EscrowWalletDashboard';
@@ -12,6 +12,7 @@ interface OrdersViewProps {
   onReleaseEscrow: (orderId: string) => void;
   onUpdateUser?: (updated: UserProfile) => void;
   showToast?: (msg: string) => void;
+  onClearOrders?: () => void;
 }
 
 export const OrdersView: React.FC<OrdersViewProps> = ({
@@ -22,6 +23,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   onReleaseEscrow,
   onUpdateUser,
   showToast,
+  onClearOrders,
 }) => {
   const [tab, setTab] = useState<'active' | 'completed' | 'cancelled' | 'wallet'>('active');
 
@@ -65,13 +67,29 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 w-full max-w-full">
         
         {/* Header (Exact Screenshot Match) */}
-        <div className="mb-6 space-y-1">
-          <h1 className="text-3xl font-heading font-black text-zinc-950">
-            Your orders
-          </h1>
-          <p className="text-xs sm:text-sm text-zinc-500">
-            Track services you've booked, in progress, and completed.
-          </p>
+        <div className="mb-6 flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-heading font-black text-zinc-950">
+              Your orders
+            </h1>
+            <p className="text-xs sm:text-sm text-zinc-500">
+              Track services you've booked, in progress, and completed.
+            </p>
+          </div>
+          {orders.length > 0 && onClearOrders && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('Clear all order records and history?')) {
+                  onClearOrders();
+                }
+              }}
+              className="px-3.5 py-2 bg-white hover:bg-rose-50 text-zinc-600 hover:text-rose-600 border border-zinc-200 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear History</span>
+            </button>
+          )}
         </div>
 
         {/* Tab Pills */}

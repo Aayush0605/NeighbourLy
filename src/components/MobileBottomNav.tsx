@@ -23,6 +23,7 @@ interface MobileBottomNavProps {
   onOpenPostTask: () => void;
   onOpenPostSkill: () => void;
   activeOrdersCount: number;
+  unreadMessagesCount?: number;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
@@ -33,6 +34,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onOpenPostTask,
   onOpenPostSkill,
   activeOrdersCount,
+  unreadMessagesCount = 0,
 }) => {
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
 
@@ -131,18 +133,25 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <span className="text-[10px] mt-1 tracking-tight">Explore</span>
           </button>
 
-          {/* 3. Multi-Format Portfolio */}
+          {/* 3. Direct Messages & Chat */}
           <button
-            onClick={() => onNavigate('portfolio')}
+            onClick={() => {
+              if (!currentUser) onOpenAuth('login');
+              else onNavigate('messages');
+            }}
             className={`flex flex-col items-center justify-center w-full h-full cursor-pointer transition-colors relative ${
-              activeView === 'portfolio' ? 'text-purple-700 font-bold' : 'text-zinc-500 hover:text-zinc-800'
+              activeView === 'messages' ? 'text-indigo-600 font-bold' : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
             <div className="relative">
-              <Presentation className="w-5 h-5 shrink-0 text-purple-600" />
-              <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-purple-600" />
+              <MessageSquare className="w-5 h-5 shrink-0" />
+              {unreadMessagesCount > 0 && (
+                <span className="absolute -top-1.5 -right-2 bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full tabular-nums border border-white animate-pulse">
+                  {unreadMessagesCount}
+                </span>
+              )}
             </div>
-            <span className="text-[10px] mt-1 tracking-tight text-purple-900 font-bold">Portfolio</span>
+            <span className="text-[10px] mt-1 tracking-tight">Messages</span>
           </button>
 
           {/* 4. My Tasks & Orders */}
@@ -156,14 +165,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             }`}
           >
             <div className="relative">
-              <MessageSquare className="w-5 h-5 shrink-0" />
+              <Briefcase className="w-5 h-5 shrink-0" />
               {activeOrdersCount > 0 && (
                 <span className="absolute -top-1.5 -right-2 bg-zinc-950 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full tabular-nums border border-white">
                   {activeOrdersCount}
                 </span>
               )}
             </div>
-            <span className="text-[10px] mt-1 tracking-tight">Tasks</span>
+            <span className="text-[10px] mt-1 tracking-tight">Orders</span>
           </button>
 
           {/* 5. User Profile */}
@@ -173,7 +182,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               else onNavigate('profile');
             }}
             className={`flex flex-col items-center justify-center w-full h-full cursor-pointer transition-colors ${
-              activeView === 'profile' ? 'text-indigo-600 font-bold' : 'text-zinc-500 hover:text-zinc-800'
+              activeView === 'profile' || activeView === 'portfolio' || activeView === 'wallet' ? 'text-indigo-600 font-bold' : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
             <User className="w-5 h-5 shrink-0" />

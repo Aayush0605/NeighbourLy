@@ -22,6 +22,7 @@ import {
   FileText
 } from 'lucide-react';
 import { ServiceListing, TaskRequest, LocationPoint, UserProfile } from '../types';
+import { getAuthHeaders } from '../services/authService';
 import { NeighborLyLogo } from './NeighborLyLogo';
 import { StudentMascot } from './StudentMascot';
 
@@ -46,6 +47,16 @@ interface ChatMessage {
   suggestedRequests?: TaskRequest[];
 }
 
+function cleanChatMarkdown(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/^#{1,6}\s+/gm, '') // Remove markdown heading hashtags
+    .replace(/\*{1,3}(.*?)\*{1,3}/g, '$1') // Remove asterisks
+    .replace(/_{1,3}(.*?)_{1,3}/g, '$1') // Remove underscores
+    .replace(/`([^`]+)`/g, '$1') // Remove backticks
+    .trim();
+}
+
 export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
   currentLocation,
   services,
@@ -62,7 +73,7 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
     {
       id: 'welcome',
       sender: 'assistant',
-      text: `Hello neighbor! 👋 I'm your **NeighborLy AI Assistant**, powered by live platform data & Gemini.\n\nI have direct access to our live **${currentLocation.neighborhood || currentLocation.city}** campus database to help you:\n\n• 📍 **Radius-Based Search**: Match skills and field works within **${selectedRadiusKm} km**\n• 💰 **Real Pricing**: PPT & Pitch Decks (₹200–₹450), 4K Video Edits (₹300–₹600), DSA Tutoring (₹180–₹350)\n• 📋 **Open Field Works**: Browse or post offline campus tasks\n• 🛡️ **Escrow Protection**: Full money safety with transparent 8% platform fee\n\nHow can I help you today?`,
+      text: `Hello neighbor! 👋 I am your NeighborLy AI Assistant, powered by live platform data.\n\nI have direct access to our live ${currentLocation.neighborhood || currentLocation.city} database to help you:\n\n• 📍 Radius Search: Match skills and tasks within ${selectedRadiusKm} km\n• 💰 Real Pricing: PPT & Pitch Decks (₹200–₹450), 4K Video Edits (₹300–₹600), Tutoring (₹180–₹350)\n• 📋 Open Field Works: Browse or post offline campus tasks\n• 🛡️ Escrow Protection: Full money safety with transparent 8% platform fee\n\nHow can I help you today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -104,14 +115,37 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
     setIsLoading(true);
 
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch('/api/gemini/assistant', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           prompt: query,
           userLocation: currentLocation,
-          localServices: services,
-          taskRequests: requests,
+          localServices: services.slice(0, 20).map((s) => ({
+            id: s.id,
+            title: s.title,
+            category: s.category,
+            price: s.price,
+            deliveryDays: s.deliveryDays,
+            provider: {
+              name: s.provider?.name,
+              studentUniversity: s.provider?.studentUniversity,
+              studentVerified: s.provider?.studentVerified,
+            },
+            distanceKm: s.distanceKm,
+            location: s.location,
+            skills: s.skills,
+          })),
+          taskRequests: requests.slice(0, 15).map((r) => ({
+            id: r.id,
+            title: r.title,
+            category: r.category,
+            budget: r.budget,
+            requesterName: r.requesterName,
+            requesterLocation: r.requesterLocation,
+            urgent: r.isUrgent || r.urgent,
+          })),
           maxRadiusKm: selectedRadiusKm,
         }),
       });
@@ -122,47 +156,86 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
 
       const data = await response.json();
 
-      // Find matching local services & requests to display as interactive cards
+      // Only show suggested cards if user explicitly asked for recommendations / skills or server returned them
       const lower = query.toLowerCase();
-      const matchedServices = services.filter((s) => 
-        lower.includes(s.category.toLowerCase()) ||
-        lower.includes(s.title.toLowerCase()) ||
-        s.skills.some((sk) => lower.includes(sk.toLowerCase())) ||
-        (s.distanceKm && s.distanceKm <= selectedRadiusKm)
-      ).slice(0, 3);
+      const isRecommendationIntent = 
+        lower.includes('recommend') ||
+        lower.includes('suggest') ||
+        lower.includes('show') ||
+        lower.includes('find') ||
+        lower.includes('hire') ||
+        lower.includes('service') ||
+        lower.includes('skill') ||
+        lower.includes('tutor') ||
+        lower.includes('editor') ||
+        lower.includes('deck') ||
+        lower.includes('ppt') ||
+        lower.includes('video') ||
+        lower.includes('who can');
 
-      const matchedRequests = (lower.includes('field') || lower.includes('task') || lower.includes('request') || lower.includes('work'))
+      const isTaskIntent =
+        lower.includes('field') ||
+        lower.includes('task') ||
+        lower.includes('open work') ||
+        lower.includes('urgent');
+
+      const matchedServices = isRecommendationIntent
+        ? services.filter((s) => 
+            lower.includes(s.category.toLowerCase()) ||
+            lower.includes(s.title.toLowerCase()) ||
+            s.skills.some((sk) => lower.includes(sk.toLowerCase()))
+          ).slice(0, 3)
+        : [];
+
+      const matchedRequests = isTaskIntent
         ? requests.slice(0, 2)
         : undefined;
+
+      const rawReply = data.reply || "I've matched your query with our live platform database.";
+      const cleanedReply = cleanChatMarkdown(rawReply);
 
       const assistantMsg: ChatMessage = {
         id: `ai_${Date.now()}`,
         sender: 'assistant',
-        text: data.reply || "I've matched your request with our real live database.",
+        text: cleanedReply,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        suggestedServices: matchedServices.length > 0 ? matchedServices : undefined,
-        suggestedRequests: matchedRequests && matchedRequests.length > 0 ? matchedRequests : undefined,
+        suggestedServices: Array.isArray(data.suggestedServices) && data.suggestedServices.length > 0 
+          ? data.suggestedServices 
+          : (matchedServices.length > 0 ? matchedServices : undefined),
+        suggestedRequests: Array.isArray(data.suggestedRequests) && data.suggestedRequests.length > 0 
+          ? data.suggestedRequests 
+          : matchedRequests,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
     } catch {
-      // Graceful intelligent fallback
+      // Graceful intelligent fallback without # or *
       const lower = query.toLowerCase();
-      let matched = services.filter((s) => 
-        lower.includes(s.category.toLowerCase()) ||
-        lower.includes(s.title.toLowerCase())
-      ).slice(0, 2);
+      const isRecommendationIntent = 
+        lower.includes('recommend') ||
+        lower.includes('suggest') ||
+        lower.includes('find') ||
+        lower.includes('service') ||
+        lower.includes('skill') ||
+        lower.includes('tutor');
 
-      if (matched.length === 0) {
-        matched = services.slice(0, 2);
-      }
+      let matched = isRecommendationIntent
+        ? services.filter((s) => 
+            lower.includes(s.category.toLowerCase()) ||
+            lower.includes(s.title.toLowerCase())
+          ).slice(0, 2)
+        : [];
+
+      const fallbackText = isRecommendationIntent && matched.length > 0
+        ? `📍 Top matches in your area (${selectedRadiusKm} km scope):\n\n• ${matched[0]?.title || 'PPT Design'} (₹${matched[0]?.price || 250}) by ${matched[0]?.provider?.name || 'Verified Student'}\n• ${matched[1]?.title || 'Video Editing'} (₹${matched[1]?.price || 350}) by ${matched[1]?.provider?.name || 'Campus Pro'}\n\nAll tasks include 100% Verified Escrow Protection.`
+        : `I can help you browse tutors, designers, editors, or open field works in your campus area. Ask me about pricing, tutors, or escrow protection!`;
 
       const assistantMsg: ChatMessage = {
         id: `ai_${Date.now()}`,
         sender: 'assistant',
-        text: `📍 **Live Database Matches near ${currentLocation.neighborhood} (${selectedRadiusKm} km scope)**:\n\n• **${matched[0]?.title || 'PPT & Presentation Design'}** (₹${matched[0]?.price || 250}) by *${matched[0]?.provider?.name || 'Verified Student'}*\n• **${matched[1]?.title || '4K Reel & Video Editing'}** (₹${matched[1]?.price || 350}) by *${matched[1]?.provider?.name || 'College Pro'}*\n\nAll tasks include 100% **Verified Escrow Services** protection with 8% platform fee.`,
+        text: cleanChatMarkdown(fallbackText),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        suggestedServices: matched,
+        suggestedServices: matched.length > 0 ? matched : undefined,
       };
       setMessages((prev) => [...prev, assistantMsg]);
     } finally {
@@ -175,7 +248,7 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
       {
         id: 'welcome',
         sender: 'assistant',
-        text: `Conversation reset. How can I help you find or offer local tasks near **${currentLocation.neighborhood || currentLocation.city}**?`,
+        text: `Conversation reset. How can I help you find or offer local tasks near ${currentLocation.neighborhood || currentLocation.city}?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
@@ -289,39 +362,68 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
                     >
                       <div className="whitespace-pre-wrap">{msg.text}</div>
 
-                      {/* Matched Local Listing Cards */}
+                      {/* Matched Local Listing Cards in Proper Interactive Tab Style */}
                       {msg.suggestedServices && msg.suggestedServices.length > 0 && (
                         <div className="mt-3 pt-2.5 border-t border-zinc-100 space-y-2">
-                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
-                            <span>Recommended Skills Nearby</span>
-                            <span className="text-purple-600 font-bold">Within {selectedRadiusKm}km</span>
-                          </p>
-                          <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-[11px] font-bold text-zinc-600">
+                            <span className="flex items-center gap-1 text-purple-700">
+                              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                              <span>Matched Services ({selectedRadiusKm}km scope)</span>
+                            </span>
+                            <span className="text-[10px] text-zinc-400">Click to open & book</span>
+                          </div>
+                          
+                          <div className="space-y-2">
                             {msg.suggestedServices.map((svc) => (
                               <div
                                 key={svc.id}
                                 onClick={() => {
                                   onSelectService(svc);
                                 }}
-                                className="p-2.5 bg-zinc-50 hover:bg-indigo-50/60 rounded-xl border border-zinc-200/80 flex items-center justify-between gap-2.5 cursor-pointer transition-colors group"
+                                className="p-3 bg-gradient-to-r from-purple-50/70 to-indigo-50/70 hover:from-purple-100/90 hover:to-indigo-100/90 rounded-2xl border border-purple-200/80 shadow-2xs hover:shadow-soft-xs transition-all cursor-pointer group flex flex-col gap-2"
                               >
-                                <div className="min-w-0 flex-1">
-                                  <p className="font-bold text-zinc-900 text-xs truncate group-hover:text-indigo-700">
-                                    {svc.title}
-                                  </p>
-                                  <p className="text-[11px] text-zinc-500 truncate">
-                                    {svc.provider?.name} {svc.provider?.studentUniversity ? `· ${svc.provider.studentUniversity}` : ''}
-                                  </p>
-                                  <span className="text-[10px] text-purple-700 font-semibold">
-                                    📍 {svc.distanceKm ? `${svc.distanceKm.toFixed(1)} km away` : 'Campus Hub'}
-                                  </span>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                      <span className="text-[10px] font-extrabold uppercase tracking-wide bg-purple-200/80 text-purple-900 px-2 py-0.5 rounded-md">
+                                        {svc.category}
+                                      </span>
+                                      <span className="text-[10px] text-emerald-800 bg-emerald-100/80 font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                                        <ShieldCheck className="w-2.5 h-2.5" />
+                                        <span>Escrow</span>
+                                      </span>
+                                    </div>
+                                    <h4 className="font-extrabold text-zinc-950 text-xs sm:text-sm group-hover:text-purple-900 transition-colors leading-snug line-clamp-1">
+                                      {svc.title}
+                                    </h4>
+                                    <p className="text-[11px] text-zinc-600 truncate mt-0.5">
+                                      {svc.provider?.name} · {svc.provider?.studentUniversity || 'Verified Student'}
+                                    </p>
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <span className="font-black text-sm text-zinc-950 block">₹{svc.price}</span>
+                                    <span className="text-[10px] text-purple-700 font-semibold">
+                                      📍 {svc.distanceKm ? `${svc.distanceKm.toFixed(1)} km` : 'Near you'}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="text-right shrink-0">
-                                  <span className="font-bold text-xs text-zinc-950">₹{svc.price}</span>
-                                  <span className="flex items-center gap-0.5 text-[10px] text-indigo-600 font-semibold group-hover:underline">
-                                    <span>View</span>
-                                    <ExternalLink className="w-2.5 h-2.5" />
+
+                                {/* Direct Action Bar */}
+                                <div className="pt-2 border-t border-purple-200/60 flex items-center justify-between">
+                                  <span className="text-[10px] text-zinc-500 font-medium">
+                                    ⭐ {typeof svc.rating === 'number' ? svc.rating.toFixed(1) : '5.0'} · {svc.deliveryDays === 0 ? 'Same Day' : `${svc.deliveryDays}d delivery`}
                                   </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onSelectService(svc);
+                                    }}
+                                    className="px-2.5 py-1 bg-purple-700 hover:bg-purple-800 group-hover:bg-purple-800 text-white rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 shadow-2xs"
+                                  >
+                                    <span>Open in Services</span>
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </button>
                                 </div>
                               </div>
                             ))}
@@ -372,9 +474,59 @@ export const AiChatbotWidget: React.FC<AiChatbotWidgetProps> = ({
                       )}
                     </div>
 
-                    <span className="text-[9px] text-zinc-400 px-1 block">
-                      {msg.timestamp}
-                    </span>
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-[9px] text-zinc-400">
+                        {msg.timestamp}
+                      </span>
+                      {!isUser && msg.id !== 'welcome' && (
+                        <div className="flex items-center gap-1.5 text-zinc-400">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await fetch('/api/gemini/chat/feedback', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    feedbackId: msg.id,
+                                    prompt: 'User chat prompt',
+                                    reply: msg.text,
+                                    feedback: 'up',
+                                    userLocation: currentLocation,
+                                  }),
+                                });
+                              } catch (e) {}
+                            }}
+                            className="p-1 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors text-[11px]"
+                            title="Helpful response"
+                          >
+                            👍
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await fetch('/api/gemini/chat/feedback', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    feedbackId: msg.id,
+                                    prompt: 'User chat prompt',
+                                    reply: msg.text,
+                                    feedback: 'down',
+                                    userLocation: currentLocation,
+                                  }),
+                                });
+                              } catch (e) {}
+                            }}
+                            className="p-1 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors text-[11px]"
+                            title="Not helpful"
+                          >
+                            👎
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

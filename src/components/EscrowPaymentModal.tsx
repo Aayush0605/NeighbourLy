@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { ServiceListing, UserProfile } from '../types';
 import { calculateEscrowBreakdown, KNOWN_UPI_BANKS, spendWalletFunds } from '../services/escrowService';
+import { getAuthHeaders } from '../services/authService';
 
 interface EscrowPaymentModalProps {
   service: ServiceListing;
@@ -140,10 +141,11 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
     setProcessingStage('Establishing secure 256-bit TLS handshake with Banking Payment Gateway...');
 
     try {
-      // Call server Payment Gateway endpoint
+      // Call server Payment Gateway endpoint with verified Firebase ID Token
+      const headers = await getAuthHeaders();
       const res = await fetch('/api/gateway/pay', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           buyerId: currentUser.id,
           buyerName: currentUser.name,

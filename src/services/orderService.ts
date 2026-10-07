@@ -1,4 +1,5 @@
 import { Order, OrderStatus, EscrowStatus } from '../types';
+import { getAuthHeaders } from './authService';
 
 export interface CreateOrderPayload {
   buyerId: string;
@@ -17,15 +18,14 @@ export interface CreateOrderPayload {
 }
 
 /**
- * Creates an escrow order via the hardened server endpoint
+ * Creates an escrow order via the hardened server endpoint with verified Firebase ID Token
  */
 export async function createOrderViaServer(payload: CreateOrderPayload): Promise<Order | null> {
   try {
+    const headers = await getAuthHeaders();
     const res = await fetch('/api/orders/create', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(payload),
     });
 
@@ -44,7 +44,7 @@ export async function createOrderViaServer(payload: CreateOrderPayload): Promise
 }
 
 /**
- * Transitions escrow order status via the hardened server endpoint
+ * Transitions escrow order status via the hardened server endpoint with verified Firebase ID Token
  */
 export async function updateOrderStatusViaServer(
   orderId: string,
@@ -52,11 +52,10 @@ export async function updateOrderStatusViaServer(
   userId?: string
 ): Promise<{ success: boolean; status?: OrderStatus; escrowStatus?: EscrowStatus }> {
   try {
+    const headers = await getAuthHeaders();
     const res = await fetch(`/api/orders/${orderId}/status`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ action, userId }),
     });
 

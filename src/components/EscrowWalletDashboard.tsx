@@ -20,6 +20,7 @@ import {
   X
 } from 'lucide-react';
 import { UserProfile, Order, WalletTransaction } from '../types';
+import { getAuthHeaders } from '../services/authService';
 import { 
   calculateEscrowBreakdown, 
   verifyUpiId, 
@@ -106,9 +107,10 @@ export const EscrowWalletDashboard: React.FC<EscrowWalletDashboardProps> = ({
 
     setIsDepositing(true);
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch('/api/gateway/deposit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           userId: currentUser.id,
           amount: depositAmount,

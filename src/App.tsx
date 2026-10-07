@@ -26,7 +26,8 @@ import {
   getStoredOrders, 
   saveStoredOrders, 
   getStoredMessages, 
-  saveStoredMessages
+  saveStoredMessages,
+  clearAllStoredHistory
 } from './data/mockData';
 import { 
   syncUserProfileToCloud, 
@@ -42,6 +43,10 @@ import {
   subscribeToRequests,
   subscribeToOrders,
   syncConversationToCloud,
+  deleteConversationFromCloud,
+  buildDeterministicConversationId,
+  fetchConversation,
+  fetchConversationMessages,
   subscribeToConversations,
   syncConversationMessageToCloud,
   subscribeToConversationMessages,
@@ -847,58 +852,8 @@ export default function App() {
 
     // Ensure parent conversation exists in Firestore before sending
     const currentConv = conversations.find((c) => c.id === targetId);
-    if (!currentConv && pendingRecipientUser) {
-      const targetUser = pendingRecipientUser;
-      const participantIds = Array.from(
-        new Set([
-          sender.id,
-          targetUser.id,
-          sender.email || '',
-          targetUser.email || '',
-          sender.userId || '',
-          targetUser.userId || '',
-        ])
-      ).filter(Boolean);
-
-      const createdConv: Conversation = {
-        id: targetId,
-        participantIds,
-        participants: {
-          [sender.id]: {
-            id: sender.id,
-            name: sender.name,
-            avatar: sender.avatar,
-            role: sender.role,
-            email: sender.email,
-          },
-          [targetUser.id]: {
-            id: targetUser.id,
-            name: targetUser.name,
-            avatar: targetUser.avatar,
-            role: targetUser.role,
-            email: targetUser.email,
-          },
-        },
-        lastMessage: text,
-        lastSenderId: sender.id,
-        lastSenderName: sender.name,
-        updatedAt: new Date().toISOString(),
-      };
-      await syncConversationToCloud(createdConv);
-    }
-
-    // Save to Firestore
-    await syncConversationMessageToCloud(targetId, newMsg, {
-      lastMessage: text,
-      lastSenderId: sender.id,
-      lastSenderName: sender.name,
-    });
-
-    if (targetId.startsWith('ord_')) {
-      await syncMessageToCloud(targetId, newMsg);
-    }
-
-    // Determine recipient user ID & email to notify them
+    
+    // Determine recipient user ID & email to notify them and ensure 2-way sync
     let recipientId: string | null = null;
     let recipientEmail: string | null = null;
     if (currentConv) {
@@ -922,6 +877,64 @@ export default function App() {
     } else if (pendingRecipientUser) {
       recipientId = pendingRecipientUser.id;
       recipientEmail = pendingRecipientUser.email;
+    } else if (targetId.startsWith('conv_')) {
+      // Extract from conv_id1__id2 format
+      const parts = targetId.replace('conv_', '').split('__');
+      if (parts.length >= 2) {
+        recipientId = parts[0] === sender.id ? parts[1] : parts[0];
+      }
+    }
+
+    const participantIds = Array.from(
+      new Set([
+        sender.id,
+        recipientId || '',
+        sender.email || '',
+        recipientEmail || '',
+        sender.userId || '',
+      ])
+    ).filter(Boolean);
+
+    const createdConv: Conversation = {
+      id: targetId,
+      participantIds,
+      participants: {
+        ...(currentConv?.participants || {}),
+        [sender.id]: {
+          id: sender.id,
+          name: sender.name,
+          avatar: sender.avatar,
+          role: sender.role,
+          email: sender.email,
+        },
+        ...(recipientId
+          ? {
+              [recipientId]: {
+                id: recipientId,
+                name: pendingRecipientUser?.name || currentConv?.participants?.[recipientId]?.name || 'Student Peer',
+                avatar: pendingRecipientUser?.avatar || currentConv?.participants?.[recipientId]?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+                role: 'user',
+                email: recipientEmail || undefined,
+              },
+            }
+          : {}),
+      },
+      lastMessage: text,
+      lastSenderId: sender.id,
+      lastSenderName: sender.name,
+      updatedAt: new Date().toISOString(),
+    };
+    await syncConversationToCloud(createdConv);
+
+    // Save to Firestore
+    await syncConversationMessageToCloud(targetId, newMsg, {
+      lastMessage: text,
+      lastSenderId: sender.id,
+      lastSenderName: sender.name,
+    });
+
+    if (targetId.startsWith('ord_')) {
+      await syncMessageToCloud(targetId, newMsg);
     }
 
     // Send real in-app notification to the recipient user in Firestore
@@ -1145,7 +1158,23 @@ export default function App() {
           markNotificationAsReadInCloud(notif.id);
           deleteNotificationFromCloud(notif.id);
           if (notif.linkView === 'messages') {
-            if (notif.linkId) setActiveConversationId(notif.linkId);
+            if (notif.linkId) {
+              setActiveConversationId(notif.linkId);
+              // Proactively load conversation and messages from cloud immediately
+              fetchConversation(notif.linkId).then((c) => {
+                if (c) {
+                  setConversations((prev) => {
+                    if (prev.some((x) => x.id === c.id)) return prev;
+                    return [c, ...prev];
+                  });
+                }
+              });
+              fetchConversationMessages(notif.linkId).then((msgs) => {
+                if (msgs && msgs.length > 0) {
+                  setConversationMessages(msgs);
+                }
+              });
+            }
             setActiveView('messages');
           } else if (notif.linkView === 'orders') {
             if (notif.linkId) setActiveChatOrderId(notif.linkId);
@@ -1438,6 +1467,10 @@ export default function App() {
               onAdminUpdateOrderStatus={handleUpdateOrderStatus}
               onOpenVerificationModal={() => handleOpenProfile(currentUser)}
               onNavigatePortfolio={() => setActiveView('portfolio')}
+              onOpenEscrowWallet={() => setActiveView('wallet')}
+              onLogout={handleLogout}
+              showToast={showToast}
+              onNavigate={(v) => setActiveView(v)}
             />
           ) : (
             <div className="max-w-md mx-auto my-16 px-4">
@@ -1736,6 +1769,7 @@ export default function App() {
           else setIsPostServiceOpen(true);
         }}
         activeOrdersCount={activeOrdersCount}
+        unreadMessagesCount={unreadNotificationsCount}
       />
 
     </div>

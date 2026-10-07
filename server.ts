@@ -7,6 +7,8 @@ import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import { initializeApp, getApps, getApp, type App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
 dotenv.config();
 
@@ -14,8 +16,95 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || 'neighborly-community-admin-key-2026';
+
+// Initialize Firebase Admin for server-side ID token verification
+let firebaseAdminApp: App | null = null;
+try {
+  let projectId = process.env.FIREBASE_PROJECT_ID || 'stellar-display-wthv3';
+  if (fs.existsSync('./firebase-applet-config.json')) {
+    try {
+      const cfg = JSON.parse(fs.readFileSync('./firebase-applet-config.json', 'utf8'));
+      if (cfg.projectId) projectId = cfg.projectId;
+    } catch (e) {}
+  }
+  if (!getApps().length) {
+    firebaseAdminApp = initializeApp({ projectId });
+  } else {
+    firebaseAdminApp = getApp();
+  }
+  console.log(`[Server Auth] Firebase Admin initialized for project: ${projectId}`);
+} catch (adminErr) {
+  console.warn('[Server Auth] Firebase Admin initialization note:', adminErr);
+}
+
+export interface AuthenticatedUser {
+  uid: string;
+  email?: string;
+  name?: string;
+  picture?: string;
+  admin?: boolean;
+}
+
+/**
+ * Middleware: Strictly verifies Firebase Auth ID token from Authorization: Bearer <token>
+ */
+export async function verifyFirebaseToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized: Missing Firebase ID Token in Authorization header' });
+    return;
+  }
+
+  const idToken = authHeader.split('Bearer ')[1]?.trim();
+  if (!idToken) {
+    res.status(401).json({ error: 'Unauthorized: Empty token provided' });
+    return;
+  }
+
+  try {
+    const auth = getAuth(firebaseAdminApp || undefined);
+    const decoded = await auth.verifyIdToken(idToken);
+    (req as any).user = {
+      uid: decoded.uid,
+      email: decoded.email,
+      name: decoded.name,
+      picture: decoded.picture,
+      admin: decoded.admin === true || decoded.email === 'admin@neighborly.in',
+    };
+    next();
+  } catch (err: any) {
+    console.warn('[Server Auth] Token verification rejected:', err?.message);
+    res.status(401).json({ error: 'Unauthorized: Invalid, tampered, or expired Firebase ID Token' });
+  }
+}
+
+/**
+ * Middleware: Optionally verifies Firebase Auth ID token if provided
+ */
+export async function optionalFirebaseToken(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const idToken = authHeader.split('Bearer ')[1]?.trim();
+    if (idToken) {
+      try {
+        const auth = getAuth(firebaseAdminApp || undefined);
+        const decoded = await auth.verifyIdToken(idToken);
+        (req as any).user = {
+          uid: decoded.uid,
+          email: decoded.email,
+          name: decoded.name,
+          picture: decoded.picture,
+          admin: decoded.admin === true || decoded.email === 'admin@neighborly.in',
+        };
+      } catch (err) {
+        // Guest mode continues
+      }
+    }
+  }
+  next();
+}
 
 // Razorpay Payment Gateway Configuration
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_neighborly2026';
@@ -89,8 +178,9 @@ async function startServer() {
     next();
   });
 
-  // Strict Request Body Limit to prevent memory exhaustion
-  app.use(express.json({ limit: '100kb' }));
+  // Request Body Limits to accommodate student ID card photos, avatar uploads, and JSON payloads
+  app.use(express.json({ limit: '15mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
   // Initialize server-side Google GenAI SDK if API key exists
   const apiKey = process.env.GEMINI_API_KEY;
@@ -106,11 +196,21 @@ async function startServer() {
     });
   }
 
-  // AI Assistant API endpoint with rate limiting & sanitization
-  // AI Assistant Endpoint (Grounding with Live Database, Pricing, Radius & Field Works)
+  // In-memory feedback store to track chatbot gaps and user satisfaction
+  const aiFeedbackStore: Array<{
+    id: string;
+    prompt: string;
+    reply: string;
+    feedback: 'up' | 'down';
+    note?: string;
+    timestamp: number;
+    userLocation?: string;
+  }> = [];
+
+  // AI Assistant API endpoint with rate limiting, sanitization & database grounding
   app.post('/api/gemini/assistant', assistantRateLimiter, async (req: Request, res: Response) => {
     try {
-      const { prompt, localServices, taskRequests, userLocation, activeCategory, maxRadiusKm } = req.body;
+      const { prompt, localServices, taskRequests, userLocation, activeCategory, maxRadiusKm, conversationHistory } = req.body;
 
       if (!prompt || typeof prompt !== 'string') {
         res.status(400).json({ error: 'Prompt is required and must be text.' });
@@ -145,7 +245,7 @@ async function startServer() {
         : [];
 
       const safeRequests = Array.isArray(taskRequests)
-        ? taskRequests.slice(0, 10).map((r: any) => ({
+        ? taskRequests.slice(0, 15).map((r: any) => ({
             id: String(r?.id || '').slice(0, 64),
             title: String(r?.title || '').slice(0, 100),
             budget: typeof r?.budget === 'number' ? r.budget : 300,
@@ -160,9 +260,63 @@ async function startServer() {
         ? `${userLocation.neighborhood || 'Campus Hub'}, ${userLocation.city || 'Ludhiana'} (Lat: ${userLocation.lat || 30.901}, Lng: ${userLocation.lng || 75.8573})`
         : 'Ludhiana Campus Area';
 
-      // If Gemini API is configured, call available modern models
+      // Smart matching for suggested card attachments (ONLY when explicitly requested)
+      const lower = sanitizedPrompt.toLowerCase();
+      const isRecommendationIntent = 
+        lower.includes('recommend') ||
+        lower.includes('suggest') ||
+        lower.includes('show') ||
+        lower.includes('find') ||
+        lower.includes('hire') ||
+        lower.includes('service') ||
+        lower.includes('skill') ||
+        lower.includes('tutor') ||
+        lower.includes('editor') ||
+        lower.includes('deck') ||
+        lower.includes('ppt') ||
+        lower.includes('video') ||
+        lower.includes('repair') ||
+        lower.includes('who can') ||
+        lower.includes('near') ||
+        lower.includes('radius') ||
+        lower.includes('list');
+
+      const isTaskIntent = 
+        lower.includes('field') ||
+        lower.includes('task') ||
+        lower.includes('open work') ||
+        lower.includes('open job') ||
+        lower.includes('urgent');
+
+      const matchedServices = safeServices.filter((s) => {
+        return (
+          lower.includes(s.title.toLowerCase()) ||
+          lower.includes(s.category.toLowerCase()) ||
+          s.skills.some((sk: string) => lower.includes(sk.toLowerCase()))
+        );
+      });
+
+      const suggestedServices = (isRecommendationIntent && matchedServices.length > 0)
+        ? matchedServices.slice(0, 3)
+        : undefined;
+
+      const suggestedRequests = (isTaskIntent && safeRequests.length > 0)
+        ? safeRequests.slice(0, 2)
+        : undefined;
+
+      // Helper function to strip markdown hashes and asterisks from responses
+      const cleanReplyText = (raw: string) => {
+        return raw
+          .replace(/^#{1,6}\s+/gm, '') // Remove heading hashtags
+          .replace(/\*{1,3}(.*?)\*{1,3}/g, '$1') // Remove asterisks
+          .replace(/_{1,3}(.*?)_{1,3}/g, '$1') // Remove underscores
+          .replace(/`([^`]+)`/g, '$1') // Remove backticks
+          .trim();
+      };
+
+      // If Gemini API is configured, call available modern models with system prompt
       if (ai) {
-        const modelsToTry = [GEMINI_MODEL, 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+        const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
         const systemPrompt = `You are "Neighborly AI Assistant", the authoritative real-time intelligence for NeighborLy — a hyperlocal student & neighborhood skills marketplace ("Students Helping Students" & "Local Skills. Real Opportunities").
 
 LIVE DATABASE & PLATFORM GROUNDING:
@@ -191,12 +345,12 @@ KEY PLATFORM RULES & PRICING STANDARDS:
 4. Multi-Format Portfolios:
    - Students showcase works in PPT (presentations), 4K Videos, PDF documents/notes, Graphic designs, Code repos, and Audio recordings.
 5. Student Verification:
-   - 🎓 Verified Students hold authenticated credentials verified either via College Email OTP or physical ID Card photo + roll number match. One ID per student.
+   - Verified Students hold authenticated credentials verified either via College Email OTP or physical ID Card photo + roll number match. One ID per student.
 
-RESPONSE INSTRUCTIONS:
-- Give direct, helpful, and concise answers with bold headings, bullet points, exact prices in ₹ INR, and distance in km.
-- Recommend real providers by name and university from the database above whenever matching.
-- If asked about field work or tasks, list real open requests with budgets.`;
+STRICT FORMATTING RULES:
+- Do NOT use markdown symbols like hashtags (#, ##, ###) or asterisks (*, **) in your responses.
+- Write in clean, plain, natural text with clean bullet points (•) and emojis.
+- Give direct, helpful, and concise answers without robotic introductions. Answer the user's specific intent immediately.`;
 
         for (const modelName of modelsToTry) {
           try {
@@ -210,7 +364,13 @@ RESPONSE INSTRUCTIONS:
             });
 
             if (response.text) {
-              res.json({ reply: response.text, provider: modelName });
+              res.json({ 
+                reply: cleanReplyText(response.text), 
+                provider: modelName,
+                suggestedServices,
+                suggestedRequests,
+                feedbackId: `fb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+              });
               return;
             }
           } catch (modelErr) {
@@ -219,60 +379,368 @@ RESPONSE INSTRUCTIONS:
         }
       }
 
-      // Local intelligent matcher fallback
-      const lower = sanitizedPrompt.toLowerCase();
-      let matchedServices = safeServices.filter((s) => {
-        return (
-          lower.includes(s.title.toLowerCase()) ||
-          lower.includes(s.category.toLowerCase()) ||
-          s.skills.some((sk: string) => lower.includes(sk.toLowerCase()))
-        );
-      });
-
-      if (matchedServices.length === 0 && safeServices.length > 0) {
-        matchedServices = safeServices.slice(0, 3);
-      }
-
+      // Local intelligent matcher fallback (clean without # or *)
       let reply = '';
       if (lower.includes('price') || lower.includes('cost') || lower.includes('rate') || lower.includes('fee')) {
-        reply = `💡 **Live Marketplace Pricing Guide for ${userLocation?.neighborhood || 'Your Area'}**:\n\n` +
-          `• **📊 PPT & Pitch Deck Design**: ₹200 – ₹450 per deck (Canva, PowerPoint)\n` +
-          `• **🎬 4K Video & Reel Editing**: ₹300 – ₹600 per video (Sound design, motion color)\n` +
-          `• **📚 Academic Tutoring & Solved Notes**: ₹150 – ₹400 per hour / subject\n` +
-          `• **💻 Web & App Development**: ₹500 – ₹1000 per project\n` +
-          `• **🔧 Home Repairs & Field Work**: ₹300 – ₹700 per task\n\n` +
-          `*All transactions include 100% Verified Escrow Protection (8% safety fee).*`;
+        reply = `💡 Live Marketplace Pricing Guide for ${userLocation?.neighborhood || 'Your Area'}:\n\n` +
+          `• 📊 PPT & Pitch Deck Design: ₹200 – ₹450 per deck (Canva, PowerPoint)\n` +
+          `• 🎬 4K Video & Reel Editing: ₹300 – ₹600 per video (Sound design, motion color)\n` +
+          `• 📚 Academic Tutoring & Solved Notes: ₹150 – ₹400 per hour / subject\n` +
+          `• 💻 Web & App Development: ₹500 – ₹1000 per project\n` +
+          `• 🔧 Home Repairs & Field Work: ₹300 – ₹700 per task\n\n` +
+          `All transactions include 100% Verified Escrow Protection (8% safety fee).`;
       } else if (lower.includes('field') || lower.includes('task') || lower.includes('work') || lower.includes('job') || lower.includes('open')) {
-        reply = `📋 **Live Open Field Works & Tasks in ${userLocation?.neighborhood || 'Your Campus Area'}**:\n\n` +
-          safeRequests.map(r => `• **${r.title}** in *${r.neighborhood}* — Budget: **₹${r.budget}** ${r.urgent ? '⚡ [URGENT]' : ''}`).join('\n') +
-          `\n\n*Click "Post a Task" to broadcast a new work request to nearby student helpers.*`;
+        reply = `📋 Live Open Field Works & Tasks in ${userLocation?.neighborhood || 'Your Campus Area'}:\n\n` +
+          safeRequests.map(r => `• ${r.title} in ${r.neighborhood} — Budget: ₹${r.budget} ${r.urgent ? '⚡ [URGENT]' : ''}`).join('\n') +
+          `\n\nClick "Post a Task" to broadcast a new work request to nearby student helpers.`;
       } else if (lower.includes('radius') || lower.includes('near') || lower.includes('km') || lower.includes('distance')) {
-        reply = `📍 **Radius-Based Matching within ${maxRadiusKm || 5} km of ${userLocation?.neighborhood || 'Ludhiana'}**:\n\n` +
-          matchedServices.map(s => `• **${s.title}** by **${s.providerName}** (${s.university || 'Campus'})\n  📍 **${s.distanceKm} km away** · **₹${s.price}** · ⭐ ${s.rating}`).join('\n\n');
-      } else if (matchedServices.length > 0) {
-        reply = `📍 **Here are the top matches in your neighborhood database**:\n\n` +
-          matchedServices.map((s) => {
+        reply = `📍 Radius-Based Matching within ${maxRadiusKm || 5} km of ${userLocation?.neighborhood || 'Ludhiana'}:\n\n` +
+          (suggestedServices || safeServices.slice(0, 3)).map(s => `• ${s.title} by ${s.providerName} (${s.university || 'Campus'})\n  📍 ${s.distanceKm} km away · ₹${s.price} · ⭐ ${s.rating}`).join('\n\n');
+      } else if (isRecommendationIntent && suggestedServices && suggestedServices.length > 0) {
+        reply = `📍 Top recommended matches in your neighborhood database:\n\n` +
+          suggestedServices.map((s) => {
             const formattedRating = (s.rating ?? 5.0).toFixed(1);
-            return `• **${s.title}** by **${s.providerName}** (${s.university || 'Campus'})\n  💰 **₹${s.price}** (${s.distanceKm} km away, ⭐ ${formattedRating})`;
+            return `• ${s.title} by ${s.providerName} (${s.university || 'Campus'})\n  💰 ₹${s.price} (${s.distanceKm} km away, ⭐ ${formattedRating})`;
           }).join('\n\n') +
           `\n\nWould you like to book one of these skills with 100% Escrow Protection?`;
       } else {
-        reply = `Hello neighbor! 👋 I'm your **Neighborly AI Assistant**.\n\n` +
-          `I am grounded directly on the live **${userLocation?.city || 'Ludhiana'}** database:\n` +
-          `• 🔍 **Radius Detection**: Find tutors, designers & field workers within 1 to 10 km\n` +
-          `• 💰 **Live Pricing**: Real prices from ₹150 for notes, PPTs, video edits & repairs\n` +
-          `• 🛡️ **Escrow Protection**: Full simulated peer safety with 8% platform fee\n` +
-          `• 📂 **Multi-Format Portfolios**: Inspect student PPTs, videos, PDFs & code\n\n` +
+        reply = `Hello neighbor! 👋 I am your Neighborly AI Assistant.\n\n` +
+          `I am grounded directly on the live ${userLocation?.city || 'Ludhiana'} database:\n` +
+          `• 🔍 Radius Detection: Find tutors, designers & field workers within 1 to 10 km\n` +
+          `• 💰 Live Pricing: Real prices from ₹150 for notes, PPTs, video edits & repairs\n` +
+          `• 🛡️ Escrow Protection: Full simulated peer safety with 8% platform fee\n` +
+          `• 📂 Multi-Format Portfolios: Inspect student PPTs, videos, PDFs & code\n\n` +
           `What can I find or calculate for you today?`;
       }
 
-      res.json({ reply, provider: 'database-grounded' });
+      res.json({ 
+        reply: cleanReplyText(reply), 
+        provider: 'database-grounded',
+        suggestedServices,
+        suggestedRequests,
+        feedbackId: `fb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+      });
     } catch (err: any) {
       console.error('Error in /api/gemini/assistant:', err);
       res.status(500).json({ 
         error: 'Failed to generate assistant response',
         reply: "I'm having a brief connection issue, but you can browse local neighbor listings directly in the Browse tab!"
       });
+    }
+  });
+
+  // AI Chatbot Feedback Collection Endpoint (Stores user ratings to improve memory & knowledge base)
+  app.post('/api/gemini/chat/feedback', (req: Request, res: Response) => {
+    try {
+      const { feedbackId, prompt, reply, feedback, note, userLocation } = req.body;
+      if (!feedback || (feedback !== 'up' && feedback !== 'down')) {
+        res.status(400).json({ error: 'Valid feedback (up/down) is required.' });
+        return;
+      }
+
+      aiFeedbackStore.push({
+        id: feedbackId || `fb_${Date.now()}`,
+        prompt: String(prompt || '').slice(0, 500),
+        reply: String(reply || '').slice(0, 1000),
+        feedback,
+        note: note ? String(note).slice(0, 300) : undefined,
+        timestamp: Date.now(),
+        userLocation: userLocation ? JSON.stringify(userLocation) : undefined,
+      });
+
+      // Keep feedback store bounded
+      if (aiFeedbackStore.length > 500) {
+        aiFeedbackStore.splice(0, 100);
+      }
+
+      res.json({ success: true, message: 'Thank you for your feedback! It helps improve NeighborLy AI.' });
+    } catch (err: any) {
+      console.error('Error saving AI feedback:', err);
+      res.status(500).json({ error: 'Failed to save feedback' });
+    }
+  });
+
+  // AI Smart Price Recommendation Endpoint
+  app.post('/api/gemini/price-estimate', async (req: Request, res: Response) => {
+    try {
+      const { title, category, description, deliveryDays, isRush } = req.body;
+      const cleanTitle = String(title || 'Service').slice(0, 100);
+      const cleanCategory = String(category || 'General').slice(0, 50);
+      const cleanDesc = String(description || '').slice(0, 300);
+
+      // Default benchmarks
+      const benchmarkMap: Record<string, { min: number; recommended: number; max: number; rush: number }> = {
+        'PPT & Presentations': { min: 200, recommended: 350, max: 600, rush: 150 },
+        '4K Video & Reels': { min: 300, recommended: 500, max: 1000, rush: 200 },
+        'Academic Support': { min: 150, recommended: 300, max: 600, rush: 100 },
+        'Lessons & Tutoring': { min: 200, recommended: 350, max: 700, rush: 100 },
+        'Tech & Digital': { min: 400, recommended: 750, max: 2000, rush: 300 },
+        'Creative & Design': { min: 250, recommended: 450, max: 1200, rush: 150 },
+        'Home & Repairs': { min: 300, recommended: 550, max: 1500, rush: 200 },
+        'Errands & Delivery': { min: 100, recommended: 200, max: 450, rush: 100 },
+      };
+
+      const base = benchmarkMap[cleanCategory] || { min: 200, recommended: 350, max: 800, rush: 100 };
+
+      if (ai) {
+        try {
+          const prompt = `As the NeighborLy Marketplace Pricing AI, suggest fair pricing in Indian Rupees (₹ INR) for the following student skill:
+Title: "${cleanTitle}"
+Category: "${cleanCategory}"
+Description: "${cleanDesc}"
+Turnaround: ${deliveryDays || 1} day(s), Rush: ${Boolean(isRush)}
+
+Respond ONLY with valid JSON in this exact structure:
+{
+  "minPrice": number,
+  "recommendedPrice": number,
+  "maxPrice": number,
+  "rushPremium": number,
+  "rationale": "short 1-2 sentence explanation of why this pricing is fair and competitive on campus",
+  "suggestedTags": ["tag1", "tag2", "tag3"]
+}`;
+
+          const result = await ai.models.generateContent({
+            model: 'gemini-3.5-flash-lite',
+            contents: prompt,
+            config: {
+              responseMimeType: 'application/json',
+              temperature: 0.2,
+            },
+          });
+
+          if (result.text) {
+            const parsed = JSON.parse(result.text);
+            res.json({ success: true, ...parsed });
+            return;
+          }
+        } catch (genErr) {
+          console.warn('Gemini price estimate fallback triggered:', genErr);
+        }
+      }
+
+      res.json({
+        success: true,
+        minPrice: base.min,
+        recommendedPrice: base.recommended,
+        maxPrice: base.max,
+        rushPremium: base.rush,
+        rationale: `Based on local student peer benchmarks for ${cleanCategory}, ₹${base.recommended} offers a great balance of affordability and fair earnings.`,
+        suggestedTags: [cleanCategory, 'Student Verified', 'Fast Turnaround'],
+      });
+    } catch (err: any) {
+      console.error('Error in price estimation:', err);
+      res.status(500).json({ error: 'Failed to estimate pricing' });
+    }
+  });
+
+  // AI Content & Bio Enhancer Endpoint
+  app.post('/api/gemini/enhance-content', async (req: Request, res: Response) => {
+    try {
+      const { type, text, category, university } = req.body;
+      const cleanText = String(text || '').slice(0, 800);
+      const cleanType = String(type || 'service_description').slice(0, 50);
+
+      if (!cleanText.trim()) {
+        res.status(400).json({ error: 'Text is required to enhance.' });
+        return;
+      }
+
+      if (ai) {
+        try {
+          const prompt = `Enhance the following text for a student peer on the NeighborLy marketplace (${university || 'Campus'}).
+Type: ${cleanType}
+Category: ${category || 'General'}
+Original text: "${cleanText}"
+
+Requirements:
+- Make it punchy, professional, and trustworthy.
+- Format with clear bullet points if listing deliverables.
+- Keep tone friendly, student-to-student, and confident.
+- Do NOT use exaggerated marketing fluff.
+
+Respond ONLY with valid JSON:
+{
+  "enhancedText": "enhanced version",
+  "suggestedSkills": ["skill1", "skill2", "skill3", "skill4"]
+}`;
+
+          const result = await ai.models.generateContent({
+            model: 'gemini-3.5-flash-lite',
+            contents: prompt,
+            config: {
+              responseMimeType: 'application/json',
+              temperature: 0.5,
+            },
+          });
+
+          if (result.text) {
+            const parsed = JSON.parse(result.text);
+            res.json({ success: true, ...parsed });
+            return;
+          }
+        } catch (genErr) {
+          console.warn('Gemini enhance content fallback triggered:', genErr);
+        }
+      }
+
+      // High-quality local template enhancer fallback
+      const enhanced = `🎓 **What I Offer**:\n• Professional ${cleanText}\n• Quick delivery & free revisions\n• High attention to detail tailored for college projects & local neighbors.\n\n🛡️ 100% Escrow protected.`;
+      res.json({
+        success: true,
+        enhancedText: enhanced,
+        suggestedSkills: [category || 'Peer Skills', 'Quick Turnaround', 'Quality Assured'],
+      });
+    } catch (err: any) {
+      console.error('Error enhancing content:', err);
+      res.status(500).json({ error: 'Failed to enhance content' });
+    }
+  });
+
+  // AI Task Request Breakdown & Drafter Endpoint
+  app.post('/api/gemini/draft-task', async (req: Request, res: Response) => {
+    try {
+      const { promptText, neighborhood } = req.body;
+      const cleanPrompt = String(promptText || '').slice(0, 500);
+
+      if (!cleanPrompt.trim()) {
+        res.status(400).json({ error: 'Prompt is required to draft a task.' });
+        return;
+      }
+
+      if (ai) {
+        try {
+          const aiPrompt = `A neighbor in ${neighborhood || 'the campus neighborhood'} wants help with: "${cleanPrompt}".
+Convert this into a structured, clear task request for student helpers.
+
+Respond ONLY with valid JSON:
+{
+  "title": "Concise task title (e.g. PPT Pitch Deck Design for MBA Case Study)",
+  "category": "One of: PPT & Presentations, 4K Video & Reels, Academic Support, Lessons & Tutoring, Tech & Digital, Creative & Design, Home & Repairs, Errands & Delivery, Pet Care, Gardening & Outdoors",
+  "description": "Structured description with 2-3 specific bullet requirements",
+  "suggestedBudget": number (in INR, e.g. 350),
+  "isUrgent": boolean,
+  "estimatedHours": number
+}`;
+
+          const result = await ai.models.generateContent({
+            model: 'gemini-3.5-flash-lite',
+            contents: aiPrompt,
+            config: {
+              responseMimeType: 'application/json',
+              temperature: 0.3,
+            },
+          });
+
+          if (result.text) {
+            const parsed = JSON.parse(result.text);
+            res.json({ success: true, ...parsed });
+            return;
+          }
+        } catch (genErr) {
+          console.warn('Gemini draft task fallback triggered:', genErr);
+        }
+      }
+
+      res.json({
+        success: true,
+        title: cleanPrompt.slice(0, 50),
+        category: 'Academic Support',
+        description: `Need assistance with: ${cleanPrompt}.\n• Clear deliverables\n• Quick response appreciated.`,
+        suggestedBudget: 350,
+        isUrgent: false,
+        estimatedHours: 2,
+      });
+    } catch (err: any) {
+      console.error('Error drafting task:', err);
+      res.status(500).json({ error: 'Failed to draft task' });
+    }
+  });
+
+  // AI Review & Trust Summarizer Endpoint
+  app.post('/api/gemini/summarize-seller', async (req: Request, res: Response) => {
+    try {
+      const { sellerName, skills, rating, reviewCount, sampleReviews } = req.body;
+      const cleanName = String(sellerName || 'Provider').slice(0, 50);
+      const reviews = Array.isArray(sampleReviews) ? sampleReviews.slice(0, 8) : [];
+
+      if (ai && reviews.length > 0) {
+        try {
+          const aiPrompt = `Summarize the peer trust and key strengths of student creator "${cleanName}" based on:
+Rating: ${rating || 5.0}/5 (${reviewCount || 0} reviews)
+Skills: ${Array.isArray(skills) ? skills.join(', ') : 'General'}
+Recent Reviews: ${JSON.stringify(reviews)}
+
+Respond ONLY with valid JSON:
+{
+  "trustScore": number (85-99),
+  "oneLineSummary": "e.g. Consistently praised for ultra-fast 4-hour turnaround and flawless PowerPoint animations.",
+  "topStrengths": ["Strength 1", "Strength 2", "Strength 3"],
+  "badge": "Top Campus Creator"
+}`;
+
+          const result = await ai.models.generateContent({
+            model: 'gemini-3.5-flash-lite',
+            contents: aiPrompt,
+            config: {
+              responseMimeType: 'application/json',
+              temperature: 0.3,
+            },
+          });
+
+          if (result.text) {
+            const parsed = JSON.parse(result.text);
+            res.json({ success: true, ...parsed });
+            return;
+          }
+        } catch (genErr) {
+          console.warn('Gemini summarize seller fallback:', genErr);
+        }
+      }
+
+      res.json({
+        success: true,
+        trustScore: 96,
+        oneLineSummary: `Verified student provider with strong ratings in ${Array.isArray(skills) ? skills.slice(0, 2).join(' & ') : 'peer skills'}.`,
+        topStrengths: ['Reliable Communication', '100% Escrow Protected', 'Verified University Student'],
+        badge: 'Verified Peer Creator',
+      });
+    } catch (err: any) {
+      console.error('Error summarizing seller:', err);
+      res.status(500).json({ error: 'Failed to summarize seller' });
+    }
+  });
+
+  // AI Scam & Safety Verification Endpoint
+  app.post('/api/gemini/safety-check', (req: Request, res: Response) => {
+    try {
+      const { messageText } = req.body;
+      const text = String(messageText || '').toLowerCase();
+
+      // Detection patterns for off-platform payment attempts, phone number sharing to bypass escrow, or suspicious links
+      const phoneRegex = /(\+?91|0)?[6-9]\d{9}/;
+      const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+      const bypassKeywords = ['pay outside', 'pay cash directly', 'telegram', 'whatsapp me', 'skip escrow', 'gpay directly', 'paytm directly to number', 'no commission'];
+
+      let isFlagged = false;
+      let reason = '';
+
+      if (bypassKeywords.some(kw => text.includes(kw))) {
+        isFlagged = true;
+        reason = 'Attempting to transact outside NeighborLy Escrow removes your money protection and buyer warranty.';
+      } else if (phoneRegex.test(text) && (text.includes('call') || text.includes('pay') || text.includes('gpay'))) {
+        isFlagged = true;
+        reason = 'Personal phone numbers detected for off-platform contact. For your safety, use in-app chat & Escrow.';
+      }
+
+      res.json({
+        safe: !isFlagged,
+        flagged: isFlagged,
+        warning: isFlagged ? reason : null,
+      });
+    } catch (err: any) {
+      console.error('Error in safety check:', err);
+      res.status(500).json({ error: 'Safety check failed' });
     }
   });
 

@@ -216,6 +216,18 @@ export function subscribeToOrders(onUpdate: (orders: Order[]) => void): () => vo
   );
 }
 
+// Conversation Safe Identifier Normalization
+export function normalizeChatId(id: string): string {
+  if (!id) return '';
+  return id.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+}
+
+export function buildDeterministicConversationId(user1Id: string, user2Id: string): string {
+  const norm1 = normalizeChatId(user1Id);
+  const norm2 = normalizeChatId(user2Id);
+  return `conv_${[norm1, norm2].sort().join('__')}`;
+}
+
 // Conversations across different IDs
 export async function syncConversationToCloud(conversation: Conversation): Promise<boolean> {
   try {
@@ -228,6 +240,34 @@ export async function syncConversationToCloud(conversation: Conversation): Promi
   }
 }
 
+export async function deleteConversationFromCloud(conversationId: string): Promise<boolean> {
+  try {
+    const convRef = doc(db, 'conversations', conversationId);
+    await deleteDoc(convRef);
+    return true;
+  } catch (error) {
+    console.warn('Deleting conversation from cloud warning:', error);
+    return false;
+  }
+}
+
+export async function fetchConversation(conversationId: string): Promise<Conversation | null> {
+  try {
+    const convRef = doc(db, 'conversations', conversationId);
+    const snap = await getDocs(query(collection(db, 'conversations')));
+    let found: Conversation | null = null;
+    snap.forEach((d) => {
+      if (d.id === conversationId || d.data().id === conversationId) {
+        found = d.data() as Conversation;
+      }
+    });
+    return found;
+  } catch (error) {
+    console.warn('Fetching conversation warning:', error);
+    return null;
+  }
+}
+
 export function subscribeToConversations(
   userOrId: UserProfile | string | null | undefined,
   onUpdate: (conversations: Conversation[]) => void
@@ -235,10 +275,23 @@ export function subscribeToConversations(
   const idsToMatch: string[] = [];
   if (typeof userOrId === 'string' && userOrId) {
     idsToMatch.push(userOrId.toLowerCase());
+    idsToMatch.push(normalizeChatId(userOrId));
   } else if (userOrId && typeof userOrId === 'object') {
-    if (userOrId.id) idsToMatch.push(String(userOrId.id).toLowerCase());
-    if (userOrId.userId) idsToMatch.push(String(userOrId.userId).toLowerCase());
-    if (userOrId.email) idsToMatch.push(String(userOrId.email).toLowerCase());
+    if (userOrId.id) {
+      idsToMatch.push(String(userOrId.id).toLowerCase());
+      idsToMatch.push(normalizeChatId(userOrId.id));
+    }
+    if (userOrId.userId) {
+      idsToMatch.push(String(userOrId.userId).toLowerCase());
+      idsToMatch.push(normalizeChatId(userOrId.userId));
+    }
+    if (userOrId.email) {
+      idsToMatch.push(String(userOrId.email).toLowerCase());
+      idsToMatch.push(normalizeChatId(userOrId.email));
+    }
+    if (userOrId.name) {
+      idsToMatch.push(String(userOrId.name).toLowerCase());
+    }
   }
 
   const q = query(collection(db, 'conversations'));
@@ -249,6 +302,7 @@ export function subscribeToConversations(
       snapshot.forEach((d) => {
         const conv = d.data() as Conversation;
         if (!idsToMatch.length) {
+          list.push(conv);
           return;
         }
 
@@ -256,12 +310,17 @@ export function subscribeToConversations(
         const participantObjValues = Object.values(conv.participants || {});
 
         const isMatch =
-          pIds.some((pid) => idsToMatch.includes(pid)) ||
+          pIds.some((pid) => idsToMatch.includes(pid) || idsToMatch.includes(normalizeChatId(pid))) ||
           participantObjValues.some((p) => {
             const pId = p.id ? String(p.id).toLowerCase() : '';
             const pEmail = p.email ? String(p.email).toLowerCase() : '';
-            return idsToMatch.includes(pId) || (pEmail && idsToMatch.includes(pEmail));
-          });
+            const pName = p.name ? String(p.name).toLowerCase() : '';
+            return idsToMatch.includes(pId) || 
+                   idsToMatch.includes(normalizeChatId(pId)) ||
+                   (pEmail && idsToMatch.includes(pEmail)) || 
+                   (pName && idsToMatch.includes(pName));
+          }) ||
+          idsToMatch.some((id) => id.length >= 3 && conv.id.toLowerCase().includes(id));
 
         if (isMatch) {
           list.push(conv);
@@ -287,7 +346,7 @@ export async function syncConversationMessageToCloud(
     const msgRef = doc(db, 'conversations', conversationId, 'messages', message.id);
     await setDoc(msgRef, message, { merge: true });
 
-    // 2. Update conversation summary using setDoc with merge: true (NEVER updateDoc which throws if document is being initialized)
+    // 2. Update conversation summary using setDoc with merge: true
     if (meta) {
       const convRef = doc(db, 'conversations', conversationId);
       await setDoc(
@@ -335,6 +394,13 @@ export function subscribeToConversationMessages(
   conversationId: string,
   onUpdate: (messages: Message[]) => void
 ): () => void {
+  // Immediately fetch cached messages so UI is never blank
+  fetchConversationMessages(conversationId).then((initialMsgs) => {
+    if (initialMsgs.length > 0) {
+      onUpdate(initialMsgs);
+    }
+  });
+
   const q = query(collection(db, 'conversations', conversationId, 'messages'));
   const unsub = onSnapshot(
     q,
@@ -351,13 +417,13 @@ export function subscribeToConversationMessages(
     }
   );
 
-  // Background polling fallback every 2.5s for guaranteed delivery
+  // Background polling fallback every 2.0s for guaranteed delivery
   const timer = setInterval(async () => {
     const msgs = await fetchConversationMessages(conversationId);
     if (msgs.length > 0) {
       onUpdate(msgs);
     }
-  }, 2500);
+  }, 2000);
 
   return () => {
     unsub();

@@ -176,6 +176,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <button
+            onClick={() => onNavigate('messages')}
+            className={`relative py-5 px-1.5 text-xs lg:text-sm font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+              activeView === 'messages' 
+                ? 'text-indigo-900 font-bold' 
+                : 'text-zinc-600 hover:text-zinc-950'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>Messages</span>
+            {unreadMessagesCount > 0 && (
+              <span className="px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-indigo-600 text-white font-mono">
+                {unreadMessagesCount}
+              </span>
+            )}
+            {activeView === 'messages' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
+            )}
+          </button>
+
+          <button
             onClick={() => onNavigate('orders')}
             className={`relative py-5 px-1.5 text-xs lg:text-sm font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               activeView === 'orders' 
@@ -250,6 +270,24 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
             <span className="hidden sm:inline">AI Helper</span>
+          </button>
+
+          {/* Quick Direct Messages Button */}
+          <button
+            type="button"
+            onClick={() => onNavigate('messages')}
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full clay-pill text-indigo-700 hover:text-indigo-950 flex items-center justify-center cursor-pointer relative transition-all ${
+              activeView === 'messages' ? 'ring-2 ring-indigo-600 bg-indigo-50' : ''
+            }`}
+            title="Open Messages & Chats"
+            aria-label="Open messages"
+          >
+            <MessageSquare className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-indigo-600" />
+            {unreadMessagesCount > 0 && (
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.2 min-w-4.5 h-4.5 rounded-full bg-indigo-600 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
+                {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+              </span>
+            )}
           </button>
 
           {/* Notifications Bell Dropdown */}

@@ -12,7 +12,11 @@ import {
   ExternalLink,
   CheckCircle2,
   Lock,
-  Sparkles
+  Sparkles,
+  LogOut,
+  Wallet,
+  Presentation,
+  ArrowUpRight
 } from 'lucide-react';
 import { UserProfile, ServiceListing, PortfolioItem, Order } from '../types';
 import { AdminDashboard } from './AdminDashboard';
@@ -20,6 +24,7 @@ import { getServicePhoto } from '../utils/categoryImages';
 import { CollegeAutocompleteInput } from './CollegeAutocompleteInput';
 import { PortfolioShowcase } from './PortfolioShowcase';
 import { ProfileReviewsSection } from './ProfileReviewsSection';
+import { EscrowWalletDashboard } from './EscrowWalletDashboard';
 
 interface ProfileViewProps {
   currentUser: UserProfile;
@@ -34,6 +39,10 @@ interface ProfileViewProps {
   onAdminUpdateOrderStatus?: (orderId: string, status: any, escrowStatus: any) => void;
   onOpenVerificationModal?: () => void;
   onNavigatePortfolio?: () => void;
+  onOpenEscrowWallet?: () => void;
+  onLogout?: () => void;
+  showToast?: (msg: string) => void;
+  onNavigate?: (view: any) => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -49,8 +58,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onAdminUpdateOrderStatus,
   onOpenVerificationModal,
   onNavigatePortfolio,
+  onOpenEscrowWallet,
+  onLogout,
+  showToast = () => {},
+  onNavigate,
 }) => {
-  const [activeTab, setActiveTab] = useState<'services' | 'portfolio' | 'credentials' | 'reviews' | 'admin'>('services');
+  const [activeTab, setActiveTab] = useState<'services' | 'portfolio' | 'funds' | 'credentials' | 'reviews' | 'admin'>('services');
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState(currentUser.bio || '');
   const [nameInput, setNameInput] = useState(currentUser.name || 'You');
@@ -193,26 +206,52 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               >
                 {isEditingBio ? 'Close Editor' : 'Edit Profile'}
               </button>
+              
+              {/* Portfolio Action Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('portfolio');
+                  document.getElementById('profile-services-tab')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className={`px-4 py-2 border text-xs font-bold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 ${
+                  activeTab === 'portfolio'
+                    ? 'bg-purple-600 text-white border-purple-600 shadow-soft-xs'
+                    : 'bg-purple-50 hover:bg-purple-100 text-purple-900 border-purple-200'
+                }`}
+              >
+                <Presentation className="w-3.5 h-3.5 text-purple-600" />
+                <span>Portfolio (PPT/Video)</span>
+              </button>
+
+              {/* Funds & Escrow Action Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('funds');
+                  document.getElementById('profile-services-tab')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className={`px-4 py-2 border text-xs font-bold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 ${
+                  activeTab === 'funds'
+                    ? 'bg-emerald-700 text-white border-emerald-700 shadow-soft-xs'
+                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-200'
+                }`}
+              >
+                <Wallet className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Funds & Escrow (₹{netEarnings})</span>
+              </button>
+
               {onOpenVerificationModal && (
                 <button
                   type="button"
                   onClick={onOpenVerificationModal}
-                  className="px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 text-xs font-bold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5"
+                  className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-                  <span>ID & Password Security</span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                  <span>ID & Security</span>
                 </button>
               )}
-              {onNavigatePortfolio && (
-                <button
-                  type="button"
-                  onClick={onNavigatePortfolio}
-                  className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-bold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Portfolio (PPT/Video)</span>
-                </button>
-              )}
+
               <button
                 onClick={() => {
                   setActiveTab('services');
@@ -232,6 +271,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               >
                 My Orders
               </button>
+              {onLogout && (
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
+              )}
             </div>
 
           </div>
@@ -305,9 +354,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
           <button
             type="button"
-            onClick={onNavigateOrders}
-            className="bg-white rounded-3xl p-5 sm:p-6 border border-zinc-200/90 shadow-2xs text-center space-y-1 hover:border-indigo-300 transition-all cursor-pointer group"
-            title="Open Escrow Wallet & Direct Payouts"
+            onClick={() => {
+              setActiveTab('funds');
+              document.getElementById('profile-services-tab')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="bg-white rounded-3xl p-5 sm:p-6 border border-zinc-200/90 shadow-2xs text-center space-y-1 hover:border-emerald-300 transition-all cursor-pointer group"
+            title="Open Funds & Escrow Management"
           >
             <span className="text-2xl sm:text-3xl font-black font-heading text-emerald-700 block group-hover:scale-105 transition-transform">
               ₹{netEarnings}
@@ -315,8 +367,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <span className="text-xs text-zinc-500 font-medium block">
               Net Earnings (8% fee cut)
             </span>
-            <span className="text-[10px] text-indigo-600 font-bold block">
-              {currentUser.upiVerified ? '✓ Verified UPI Linked' : 'Verify UPI for Payouts →'}
+            <span className="text-[10px] text-emerald-700 font-bold block flex items-center justify-center gap-1">
+              <Wallet className="w-3 h-3 text-emerald-600" />
+              <span>{currentUser.upiVerified ? '✓ Verified UPI Linked' : 'Manage Funds & Payouts →'}</span>
             </span>
           </button>
 
@@ -344,13 +397,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('portfolio')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'portfolio'
-                ? 'bg-zinc-950 text-white shadow-soft-xs'
-                : 'text-zinc-600 hover:text-zinc-950'
+                ? 'bg-purple-600 text-white shadow-soft-xs'
+                : 'text-zinc-600 hover:text-purple-700'
             }`}
           >
-            Portfolio & Work Showcase ({currentUser.portfolio?.length || 0})
+            <Presentation className="w-3.5 h-3.5" />
+            <span>Portfolio & Work Showcase ({currentUser.portfolio?.length || 0})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('funds')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'funds'
+                ? 'bg-emerald-700 text-white shadow-soft-xs'
+                : 'text-zinc-600 hover:text-emerald-700'
+            }`}
+          >
+            <Wallet className="w-3.5 h-3.5" />
+            <span>Funds & Escrow (₹{netEarnings})</span>
           </button>
           <button
             onClick={() => setActiveTab('credentials')}
@@ -498,7 +563,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
         )}
 
-        {/* TAB 3: Student Credentials & Trust Badges */}
+        {/* TAB 3: Funds & Escrow Management */}
+        {activeTab === 'funds' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <EscrowWalletDashboard
+              currentUser={currentUser}
+              orders={orders}
+              onUpdateUser={onUpdateProfile}
+              showToast={showToast}
+              onNavigate={onNavigate}
+            />
+          </div>
+        )}
+
+        {/* TAB 4: Student Credentials & Trust Badges */}
         {activeTab === 'credentials' && (
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/90 shadow-2xs space-y-6 animate-in fade-in duration-200">
             <h2 className="text-base font-bold text-zinc-950">Campus Student Trust Verification</h2>

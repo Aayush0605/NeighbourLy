@@ -55,6 +55,37 @@ export async function ensureFirebaseAuth(): Promise<FirebaseUser | null> {
 }
 
 /**
+ * Retrieves the fresh Firebase Auth ID token for backend authentication
+ */
+export async function getAuthIdToken(forceRefresh = false): Promise<string | null> {
+  if (!auth.currentUser) {
+    await ensureFirebaseAuth();
+  }
+  if (!auth.currentUser) return null;
+  try {
+    return await auth.currentUser.getIdToken(forceRefresh);
+  } catch (err) {
+    console.warn('Error retrieving Firebase Auth ID token:', err);
+    return null;
+  }
+}
+
+/**
+ * Returns JSON fetch headers with Authorization Bearer ID Token attached
+ */
+export async function getAuthHeaders(customHeaders?: Record<string, string>): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...customHeaders,
+  };
+  const token = await getAuthIdToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+/**
  * Signs in or creates account with Firebase Auth, linking to user profile
  */
 export async function authenticateUser(

@@ -5,7 +5,10 @@ import {
   MapPin, 
   CheckCircle2, 
   AlertCircle,
-  Plus
+  Plus,
+  Sparkles,
+  Zap,
+  HelpCircle
 } from 'lucide-react';
 import { ServiceCategory, LocationPoint, TaskRequest, UserProfile } from '../types';
 import { NeighborLyLogo } from './NeighborLyLogo';
@@ -32,6 +35,9 @@ export const PostRequestModal: React.FC<PostRequestModalProps> = ({
   const [budget, setBudget] = useState<number>(400);
   const [isUrgent, setIsUrgent] = useState(false);
   const [isSubmittedSuccess, setIsSubmittedSuccess] = useState(false);
+  const [isAiDrafting, setIsAiDrafting] = useState(false);
+  const [aiDraftPrompt, setAiDraftPrompt] = useState('');
+  const [showAiInput, setShowAiInput] = useState(false);
 
   const categories: ServiceCategory[] = [
     'Academic Support',
@@ -47,6 +53,43 @@ export const PostRequestModal: React.FC<PostRequestModalProps> = ({
     'Gardening & Outdoors',
     'Other',
   ];
+
+  const handleAiDraft = async (customPrompt?: string) => {
+    const promptToUse = customPrompt || aiDraftPrompt || title || description;
+    if (!promptToUse.trim()) return;
+
+    setIsAiDrafting(true);
+    try {
+      const res = await fetch('/api/gemini/draft-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          promptText: promptToUse,
+          neighborhood: currentLocation.neighborhood,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.title) setTitle(data.title);
+        if (data.description) setDescription(data.description);
+        if (data.category && categories.includes(data.category as any)) {
+          setCategory(data.category as ServiceCategory);
+        }
+        if (typeof data.suggestedBudget === 'number') {
+          setBudget(data.suggestedBudget);
+        }
+        if (typeof data.isUrgent === 'boolean') {
+          setIsUrgent(data.isUrgent);
+        }
+        setShowAiInput(false);
+      }
+    } catch (e) {
+      console.warn('AI task draft error:', e);
+    } finally {
+      setIsAiDrafting(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,6 +171,43 @@ export const PostRequestModal: React.FC<PostRequestModalProps> = ({
         ) : (
           <form onSubmit={handleSubmit} className="p-6 sm:p-7 space-y-5 overflow-y-auto">
             
+            {/* AI Smart Drafter Card */}
+            <div className="p-3.5 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 rounded-2xl border border-purple-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-purple-900">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  <span>AI Smart Task Drafter</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAiInput(!showAiInput)}
+                  className="text-[11px] text-purple-700 font-extrabold hover:underline cursor-pointer"
+                >
+                  {showAiInput ? 'Hide' : '✨ Type a quick prompt'}
+                </button>
+              </div>
+
+              {showAiInput && (
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={aiDraftPrompt}
+                    onChange={(e) => setAiDraftPrompt(e.target.value)}
+                    placeholder="e.g. Need 15-slide pitch deck for campus startup pitching tomorrow"
+                    className="flex-1 px-3 py-2 text-xs bg-white border border-purple-200 rounded-xl text-zinc-900 focus:outline-none focus:border-purple-600 shadow-2xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAiDraft()}
+                    disabled={isAiDrafting}
+                    className="px-3 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shrink-0 transition-colors shadow-2xs cursor-pointer"
+                  >
+                    {isAiDrafting ? 'Drafting...' : 'Generate'}
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Location context tag */}
             <div className="flex items-center gap-2 p-3 bg-zinc-50 rounded-2xl border border-zinc-200/80 text-xs text-zinc-700">
               <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
